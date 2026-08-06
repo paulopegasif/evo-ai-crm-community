@@ -201,7 +201,15 @@ class Whatsapp::Providers::EvolutionGoService < Whatsapp::Providers::BaseService
 
   def api_base_path
     api_url = whatsapp_channel.provider_config['api_url'].presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip
-    api_url&.chomp('/')
+    url = api_url.to_s.strip
+    normalized_url = if url.include?('localhost:5173/evo-go') || url.include?('127.0.0.1:5173/evo-go')
+                       'http://evo-go-gateway:8080'
+                     elsif url.include?('localhost:8080') || url.include?('127.0.0.1:8080')
+                       'http://evo-go-gateway:8080'
+                     else
+                       url
+                     end
+    normalized_url.chomp('/')
   end
 
   def instance_name

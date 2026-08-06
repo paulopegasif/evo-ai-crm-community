@@ -244,7 +244,8 @@ class Api::V1::EvolutionGo::AuthorizationsController < Api::V1::BaseController
     # Parâmetros vêm dentro de authorization ou como query params
     auth_params = params[:authorization] || params
 
-    @api_url = auth_params[:api_url].presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip
+    raw_api_url = auth_params[:api_url].presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip
+    @api_url = normalize_api_url(raw_api_url)
     @admin_token = auth_params[:admin_token].presence || GlobalConfigService.load('EVOLUTION_GO_ADMIN_SECRET', '').to_s.strip
     @instance_name = auth_params[:instance_name] || params[:instanceName] || params[:instanceId]
     @instance_uuid = auth_params[:instance_uuid] || params[:instanceName] || params[:instanceId]
@@ -267,7 +268,7 @@ class Api::V1::EvolutionGo::AuthorizationsController < Api::V1::BaseController
 
       # Extract configuration from the channel
       @inbox = whatsapp_channel.inbox
-      @api_url = whatsapp_channel.provider_config['api_url'] if @api_url.blank?
+      @api_url = normalize_api_url(whatsapp_channel.provider_config['api_url']) if @api_url.blank?
       @admin_token = whatsapp_channel.provider_config['admin_token'] if @admin_token.blank?
       @instance_token = whatsapp_channel.provider_config['instance_token'] if @instance_token.blank?
       @instance_name = whatsapp_channel.provider_config['instance_name'] if @instance_name.blank?

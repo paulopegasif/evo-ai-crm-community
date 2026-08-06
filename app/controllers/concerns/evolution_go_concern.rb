@@ -52,7 +52,25 @@ module EvolutionGoConcern
                   GlobalConfigService.load('BACKEND_URL', nil).to_s.strip.presence
     raise 'BACKEND_URL is not configured (required to register Evolution Go webhook callback)' if backend_url.blank?
 
-    "#{backend_url.chomp('/')}/webhooks/whatsapp/evolution_go"
+    url = backend_url.to_s.strip
+    normalized_backend_url = if url.include?('localhost:3010') || url.include?('127.0.0.1:3010')
+                               'http://evo-crm:3000'
+                             else
+                               url
+                             end
+
+    "#{normalized_backend_url.chomp('/')}/webhooks/whatsapp/evolution_go"
+  end
+
+  def normalize_api_url(api_url)
+    url = api_url.to_s.strip
+    if url.include?('localhost:5173/evo-go') || url.include?('127.0.0.1:5173/evo-go')
+      'http://evo-go-gateway:8080'
+    elsif url.include?('localhost:8080') || url.include?('127.0.0.1:8080')
+      'http://evo-go-gateway:8080'
+    else
+      url
+    end
   end
 
   # Resolves Evolution Go credentials for an existing channel, falling back to
@@ -66,8 +84,9 @@ module EvolutionGoConcern
   def evolution_go_credentials_for(whatsapp_channel)
     config = whatsapp_channel&.provider_config || {}
 
+    raw_api_url = config['api_url'].presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip
     creds = {
-      api_url: config['api_url'].presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip,
+      api_url: normalize_api_url(raw_api_url),
       admin_token: config['admin_token'].presence || GlobalConfigService.load('EVOLUTION_GO_ADMIN_SECRET', '').to_s.strip,
       instance_token: config['instance_token'],
       instance_uuid: config['instance_uuid'],
@@ -89,7 +108,7 @@ module EvolutionGoConcern
   # row) — used by privacy/profile/settings #set_instance_params else branches.
   def evolution_go_credentials_from_params(api_url_param, admin_token_param)
     {
-      api_url: api_url_param.presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip,
+      api_url: normalize_api_url(api_url_param.presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip),
       admin_token: admin_token_param.presence || GlobalConfigService.load('EVOLUTION_GO_ADMIN_SECRET', '').to_s.strip
     }
   end

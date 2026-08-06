@@ -155,15 +155,15 @@ class Api::V1::EvolutionGo::QrcodesController < Api::V1::BaseController
 
     if parsed_response['data']
       {
-        base64: parsed_response['data']['Qrcode'],
-        code: parsed_response['data']['Code'],
+        base64: parsed_response['data']['Qrcode'] || parsed_response['data']['qrcode'],
+        code: parsed_response['data']['Code'] || parsed_response['data']['code'],
         connected: false
       }
     else
       # Fallback se estrutura for diferente
       {
-        base64: parsed_response['Qrcode'],
-        code: parsed_response['Code'],
+        base64: parsed_response['Qrcode'] || parsed_response['qrcode'],
+        code: parsed_response['Code'] || parsed_response['code'],
         connected: false
       }
     end
