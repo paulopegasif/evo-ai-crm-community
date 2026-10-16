@@ -40,6 +40,14 @@ class ConfigLoader
   def reconcile_general_config
     general_configs.each do |config|
       new_config = config.with_indifferent_access
+      env_val = ENV[new_config[:name]]
+      if env_val.present?
+        new_config[:value] = if new_config[:type] == 'boolean'
+                               env_val == 'true'
+                             else
+                               env_val
+                             end
+      end
       existing_config = InstallationConfig.find_by(name: new_config[:name])
       save_general_config(existing_config, new_config)
     end
