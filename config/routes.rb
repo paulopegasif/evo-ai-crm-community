@@ -91,6 +91,17 @@ Rails.application.routes.draw do
 
       resource :dashboard, only: [], controller: 'dashboard' do
         get :customer
+        get :leads
+      end
+
+      resources :appointments, controller: 'appointments' do
+        collection do
+          get :categories
+          get :google_calendar_auth_url
+        end
+        member do
+          post :sync_google_calendar
+        end
       end
 
       resources :inboxes, only: [:index, :show, :create, :update, :destroy], controller: 'inboxes' do

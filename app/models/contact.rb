@@ -66,6 +66,7 @@ class Contact < ApplicationRecord
   has_many :messages, as: :sender, dependent: :destroy_async
   has_many :notes, dependent: :destroy_async
   has_many :pipeline_items, dependent: :destroy_async
+  has_many :appointments, dependent: :nullify
 
   has_many :contact_companies, dependent: :destroy
   has_many :companies, through: :contact_companies, source: :company

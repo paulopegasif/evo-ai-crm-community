@@ -83,6 +83,7 @@ class User < ApplicationRecord
   has_many :notification_subscriptions, dependent: :destroy_async
   has_many :user_tours, dependent: :destroy
   has_many :notifications, dependent: :destroy_async
+  has_many :appointments, dependent: :nullify
   has_many :team_members, dependent: :destroy_async
   has_many :teams, through: :team_members
 
