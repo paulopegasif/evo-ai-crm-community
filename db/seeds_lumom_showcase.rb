@@ -6,13 +6,27 @@ puts "================================================================="
 
 # 1. USUÁRIOS E EQUIPE CLÍNICA
 puts "\n[1/6] Configurando equipe clínica Lumom Beauty..."
+# Super Admin (TI) — criado pelo /setup. Fica fora da equipe clínica.
 admin_user = User.find_by(email: 'ifsul.ph@gmail.com') || User.first
 raise "Nenhum usuário admin encontrado!" unless admin_user
 
 admin_user.update!(
   name: 'Paulo Silva',
-  display_name: 'Paulo Silva (Diretor Clínico)'
+  display_name: 'Paulo Silva (TI)'
 )
+
+# Diretora clínica — usuário real (login + papel account_owner) criado antes
+# no evo-auth via AgentBuilder. O CRM não gerencia senhas, então aqui só
+# localizamos o usuário.
+director_email = ENV.fetch('LUMOM_DIRECTOR_EMAIL', 'consultalumom@gmail.com')
+director_user = User.find_by(email: director_email)
+raise "Diretora (#{director_email}) não encontrada — crie o usuário no evo-auth antes de rodar este seed." unless director_user
+
+director_user.update!(
+  name: 'Thais Taira',
+  display_name: 'Dra. Thais Taira (Diretora Clínica)'
+)
+puts "  ✓ Diretora: #{director_user.name} (#{director_user.email})"
 
 team_members_data = [
   {
@@ -37,7 +51,7 @@ team_members_data = [
   }
 ]
 
-created_users = [admin_user]
+created_users = [director_user]
 team_members_data.each do |member|
   user = User.find_or_initialize_by(email: member[:email])
   user.uid = member[:email]
@@ -91,7 +105,7 @@ whatsapp_inbox = Inbox.find_or_create_by!(channel: whatsapp_channel) do |i|
 end
 
 # Associar equipe à caixa de entrada
-created_users.each do |u|
+(created_users + [admin_user]).each do |u|
   InboxMember.find_or_create_by!(inbox: whatsapp_inbox, user: u)
 end
 puts "  ✓ Caixa WhatsApp criada com #{created_users.count} membros atribuídos."
@@ -397,9 +411,9 @@ chat_scenarios = [
   },
   {
     contact: created_contacts[3], # Beatriz Santos
-    user: created_users[0], # Paulo Silva
+    user: created_users[0], # Dra. Thais Taira
     messages: [
-      { from: :contact, text: "Oi Paulo! A Renata me indicou a clínica de vocês, disse que o resultado do Bioestimulador dela ficou impecável!", time: 6.hours.ago },
+      { from: :contact, text: "Oi Dra. Thais! A Renata me indicou a clínica de vocês, disse que o resultado do Bioestimulador dela ficou impecável!", time: 6.hours.ago },
       { from: :user, text: "Oi Beatriz! Que prazer enorme receber sua mensagem! A Renata é uma querida e o resultado dela realmente ficou espetacular.", time: 5.hours.ago + 20.minutes },
       { from: :contact, text: "Vocês trabalham com Radiesse ou Sculptra? Tenho 38 anos e sinto que preciso estimular colágeno no terço médio.", time: 5.hours.ago },
       { from: :user, text: "Trabalhamos com os dois! Na avaliação decidimos qual molécula entrega o melhor vetor de tração e estímulo biológico para o seu tipo de pele. Já vou reservar um horário prioritário para você.", time: 4.hours.ago }
