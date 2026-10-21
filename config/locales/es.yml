@@ -186,6 +186,10 @@ es:
     online:
       delete: '%{contact_name} está conectado, por favor inténtalo más tarde'
   integration_apps:
+    google_calendar:
+      name: 'Google Calendar'
+      short_description: 'Sincronización en tiempo real de citas y horarios profesionales.'
+      description: 'Conecte su cuenta de Google Calendar para sincronizar citas, consultas estéticas y agendas con sincronización bidireccional.'
     dashboard_apps:
       name: 'Panel de aplicaciones'
       description: 'Las aplicaciones de panel te permiten crear e incrustar aplicaciones que muestran información de usuario, pedidos o historial de pagos, proporcionando más contexto a tus agentes de soporte al cliente.'

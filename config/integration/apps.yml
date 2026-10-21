@@ -9,6 +9,55 @@
 # settings_json_schema: the json schema used to validate the settings hash (https://json-schema.org/)
 # settings_form_schema: the formulate schema used in frontend to render settings form (https://vueformulate.com/)
 ########################################################
+google_calendar:
+  id: google_calendar
+  logo: google_calendar.png
+  i18n_key: google_calendar
+  action: /settings/integrations/google_calendar
+  hook_type: account
+  allow_multiple_hooks: false
+  settings_json_schema:
+    {
+      "type": "object",
+      "properties":
+        {
+          "account_email": { "type": "string" },
+          "calendar_id": { "type": "string" },
+          "sync_enabled": { "type": "boolean" },
+          "two_way_sync": { "type": "boolean" },
+          "sync_interval": { "type": "string" }
+        },
+      "additionalProperties": false
+    }
+  settings_form_schema:
+    [
+      {
+        "label": "E-mail da Conta Google",
+        "type": "text",
+        "name": "account_email",
+        "validation": "required"
+      },
+      {
+        "label": "ID da Agenda Principal (Calendar ID)",
+        "type": "text",
+        "name": "calendar_id",
+        "validation": "required"
+      },
+      {
+        "label": "Sincronização Automática em Tempo Real",
+        "type": "checkbox",
+        "name": "sync_enabled",
+        "validation": ""
+      },
+      {
+        "label": "Sincronização Bidirecional (Criar e Atualizar)",
+        "type": "checkbox",
+        "name": "two_way_sync",
+        "validation": ""
+      }
+    ]
+  visible_properties: ["account_email", "calendar_id", "sync_enabled", "two_way_sync"]
+
 webhooks:
   id: webhook
   logo: webhooks.png

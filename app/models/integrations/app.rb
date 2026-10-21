@@ -67,7 +67,7 @@ class Integrations::App
       GlobalConfigService.load('HUBSPOT_CLIENT_ID', nil).present?
     when 'shopify'
       GlobalConfigService.load('SHOPIFY_CLIENT_ID', nil).present?
-    when 'leadsquared', 'bms'
+    when 'leadsquared', 'bms', 'google_calendar'
       true
     when 'webhook', 'dashboard_apps', 'openai'
       true

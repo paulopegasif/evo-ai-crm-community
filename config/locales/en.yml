@@ -226,6 +226,10 @@ en:
     online:
       delete: '%{contact_name} is Online, please try again later'
   integration_apps:
+    google_calendar:
+      name: 'Google Calendar'
+      short_description: 'Real-time synchronization of appointments and professional schedules.'
+      description: 'Connect your Google Calendar account to synchronize appointments, aesthetic consultations, and practitioner schedules with two-way sync.'
     # Note: webhooks and dashboard_apps don't need short_description as they use different modal components
     dashboard_apps:
       name: 'Dashboard Apps'

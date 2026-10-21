@@ -186,6 +186,10 @@ pt:
     online:
       delete: '%{contact_name} está Online, por favor, tente novamente mais tarde'
   integration_apps:
+    google_calendar:
+      name: 'Google Calendar'
+      short_description: 'Sincronização em tempo real de consultas e agenda de procedimentos.'
+      description: 'Conecte sua conta do Google Calendar para sincronizar agendamentos, consultas de procedimentos estéticos e horários dos profissionais da Lumom Beauty de forma bidirecional.'
     dashboard_apps:
       name: 'Apps de dashboard'
       description: 'Dashboard Apps allow you to create and embed applications that display user information, orders, or payment history, providing more context to your customer support agents.'
