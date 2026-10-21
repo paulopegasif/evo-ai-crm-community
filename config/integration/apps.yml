@@ -23,11 +23,16 @@ google_calendar:
         {
           "account_email": { "type": "string" },
           "calendar_id": { "type": "string" },
+          "calendar_name": { "type": "string" },
           "sync_enabled": { "type": "boolean" },
           "two_way_sync": { "type": "boolean" },
-          "sync_interval": { "type": "string" }
+          "sync_interval": { "type": "string" },
+          "auto_meet": { "type": "boolean" },
+          "reminder_minutes": { "type": "integer" },
+          "last_synced_at": { "type": "string" },
+          "total_events_synced": { "type": "integer" }
         },
-      "additionalProperties": false
+      "additionalProperties": true
     }
   settings_form_schema:
     [
