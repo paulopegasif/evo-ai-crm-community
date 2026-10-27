@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_26_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -138,6 +138,36 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
   create_table "app_states", primary_key: "app_name", id: { type: :string, limit: 128 }, force: :cascade do |t|
     t.jsonb "state", null: false
     t.datetime "update_time", precision: nil, null: false
+  end
+
+  create_table "appointments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "title", limit: 255, null: false
+    t.text "description"
+    t.string "category", limit: 100, default: "Geral", null: false
+    t.datetime "start_time", null: false
+    t.datetime "end_time", null: false
+    t.integer "duration_minutes", default: 60, null: false
+    t.string "status", limit: 50, default: "scheduled", null: false
+    t.uuid "user_id", null: false
+    t.uuid "contact_id"
+    t.uuid "conversation_id"
+    t.uuid "pipeline_item_id"
+    t.string "google_calendar_event_id", limit: 255
+    t.string "google_calendar_sync_status", limit: 50, default: "pending"
+    t.string "google_meet_link", limit: 500
+    t.string "location", limit: 255
+    t.decimal "price", precision: 10, scale: 2, default: "0.0", null: false
+    t.jsonb "custom_attributes", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category"], name: "index_appointments_on_category"
+    t.index ["contact_id"], name: "index_appointments_on_contact_id"
+    t.index ["custom_attributes"], name: "index_appointments_on_custom_attributes", using: :gin
+    t.index ["google_calendar_event_id"], name: "index_appointments_on_google_calendar_event_id"
+    t.index ["start_time"], name: "index_appointments_on_start_time"
+    t.index ["status"], name: "index_appointments_on_status"
+    t.index ["user_id"], name: "index_appointments_on_user_id"
+    t.check_constraint "title::text <> ''::text", name: "appointments_title_not_empty"
   end
 
   create_table "attachments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -417,6 +447,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
     t.string "industry"
     t.boolean "email_suppressed", default: false, null: false
     t.string "email_suppression_reason"
+    t.index "((additional_attributes ->> 'ad_id'::text))", name: "index_contacts_on_attribution_ad_id", where: "(additional_attributes ? 'ad_id'::text)"
     t.index ["blocked"], name: "index_contacts_on_blocked"
     t.index ["email"], name: "uniq_email_per_account_contact", unique: true
     t.index ["id"], name: "idx_contacts_with_identity", where: "(((email)::text <> ''::text) OR ((phone_number)::text <> ''::text) OR ((identifier)::text <> ''::text))"
@@ -792,6 +823,65 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
     t.index ["inbox_id"], name: "index_messages_on_inbox_id"
     t.index ["sender_type", "sender_id"], name: "index_messages_on_sender_type_and_sender_id"
     t.index ["source_id"], name: "index_messages_on_source_id"
+  end
+
+  create_table "meta_ad_insights_daily", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "meta_ad_id", null: false
+    t.string "meta_campaign_id"
+    t.date "date", null: false
+    t.decimal "spend", precision: 14, scale: 2, default: "0.0", null: false
+    t.bigint "impressions", default: 0, null: false
+    t.bigint "reach", default: 0, null: false
+    t.bigint "clicks", default: 0, null: false
+    t.string "currency"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["meta_ad_id", "date"], name: "index_meta_ad_insights_daily_on_meta_ad_id_and_date", unique: true
+    t.index ["meta_campaign_id", "date"], name: "index_meta_ad_insights_daily_on_meta_campaign_id_and_date"
+  end
+
+  create_table "meta_ads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "meta_id", null: false
+    t.string "meta_adset_id"
+    t.string "meta_campaign_id"
+    t.string "name"
+    t.string "status"
+    t.string "effective_status"
+    t.jsonb "raw", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["meta_adset_id"], name: "index_meta_ads_on_meta_adset_id"
+    t.index ["meta_campaign_id"], name: "index_meta_ads_on_meta_campaign_id"
+    t.index ["meta_id"], name: "index_meta_ads_on_meta_id", unique: true
+  end
+
+  create_table "meta_adsets", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "meta_id", null: false
+    t.string "meta_campaign_id"
+    t.string "name"
+    t.string "status"
+    t.string "effective_status"
+    t.jsonb "raw", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["meta_campaign_id"], name: "index_meta_adsets_on_meta_campaign_id"
+    t.index ["meta_id"], name: "index_meta_adsets_on_meta_id", unique: true
+  end
+
+  create_table "meta_campaigns", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "meta_id", null: false
+    t.string "ad_account_id", null: false
+    t.string "name"
+    t.string "status"
+    t.string "effective_status"
+    t.string "objective"
+    t.datetime "created_time"
+    t.datetime "updated_time"
+    t.jsonb "raw", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ad_account_id"], name: "index_meta_campaigns_on_ad_account_id"
+    t.index ["meta_id"], name: "index_meta_campaigns_on_meta_id", unique: true
   end
 
   create_table "notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -1371,6 +1461,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_bot_inboxes", "agent_bots", column: "facebook_comment_agent_bot_id", on_delete: :nullify
   add_foreign_key "ai_agent_products", "products", on_delete: :cascade
+  add_foreign_key "appointments", "contacts"
+  add_foreign_key "appointments", "conversations"
+  add_foreign_key "appointments", "pipeline_items"
+  add_foreign_key "appointments", "users"
   add_foreign_key "automation_rule_runs", "automation_rules", on_delete: :cascade
   add_foreign_key "contact_companies", "contacts"
   add_foreign_key "contact_companies", "contacts", column: "company_id"
