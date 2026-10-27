@@ -226,6 +226,10 @@ en:
     online:
       delete: '%{contact_name} is Online, please try again later'
   integration_apps:
+    meta_ads:
+      name: 'Meta Ads'
+      short_description: 'Campaign, spend and lead performance from your Meta ad account.'
+      description: 'Connect your Meta (Facebook/Instagram) ad account to import campaigns and daily spend, and see leads, appointments, revenue, cost per lead and ROAS per campaign.'
     google_calendar:
       name: 'Google Calendar'
       short_description: 'Real-time synchronization of appointments and professional schedules.'
