@@ -46,6 +46,10 @@ Rails.application.routes.draw do
         # Session-authed availability probe: booleans only (is each provider's OAuth
         # credential configured?), never the secret itself. See AvailabilityController.
         get 'availability', to: 'availability#index'
+        resource :meta_ads, only: [:show, :update, :destroy], controller: 'meta_ads' do
+          post :test, action: :test_connection
+          post :sync
+        end
         namespace :google_calendar do
           get 'credentials', to: 'credentials#show'
         end

@@ -45,4 +45,31 @@ RSpec.describe Public::Leads::CreationService do
       expect(existing.custom_attributes['segment']).to eq('enterprise')
     end
   end
+
+  describe 'lead source attribution' do
+    let(:email) { "utm-#{SecureRandom.hex(4)}@example.com" }
+
+    def perform_with_metadata(metadata)
+      described_class.new(lead_params: {
+        contact: { name: 'Bia', email: email },
+        deal: { pipeline_id: pipeline.id, stage_id: stage.id },
+        metadata: metadata
+      }).perform
+    end
+
+    it 'stores UTMs sent in metadata as the contact first touch' do
+      result = perform_with_metadata('utm_source' => 'facebook', 'utm_campaign' => 'botox-outubro')
+
+      expect(result[:success]).to be(true)
+      expect(result[:contact].reload.additional_attributes).to include(
+        'utm_source' => 'facebook', 'utm_campaign' => 'botox-outubro', 'attribution_channel' => 'public_api'
+      )
+    end
+
+    it 'creates the contact without origin when no UTM is sent' do
+      result = perform_with_metadata({})
+
+      expect(result[:contact].reload.additional_attributes).not_to have_key('utm_source')
+    end
+  end
 end

@@ -67,7 +67,7 @@ class Integrations::App
       GlobalConfigService.load('HUBSPOT_CLIENT_ID', nil).present?
     when 'shopify'
       GlobalConfigService.load('SHOPIFY_CLIENT_ID', nil).present?
-    when 'leadsquared', 'bms', 'google_calendar'
+    when 'leadsquared', 'bms', 'google_calendar', 'meta_ads'
       true
     when 'webhook', 'dashboard_apps', 'openai'
       true
@@ -109,6 +109,9 @@ class Integrations::App
       DashboardApp.exists?
     when 'oauth_applications'
       OauthApplication.exists?
+    when 'meta_ads'
+      # A revoked/expired token needs reconfiguration: show it as disconnected.
+      Integrations::Hook.where(app_id: id).where.not("settings->>'connection_status' = ?", 'token_invalid').exists?
     else
       Integrations::Hook.exists?(app_id: id)
     end

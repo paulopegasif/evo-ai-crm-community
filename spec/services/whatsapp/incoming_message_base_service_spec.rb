@@ -100,3 +100,49 @@ RSpec.describe Whatsapp::IncomingMessageBaseService do
     end
   end
 end
+
+RSpec.describe Whatsapp::IncomingMessageBaseService, '#record_ad_referral' do
+  let(:host_class) do
+    Class.new(Whatsapp::IncomingMessageBaseService) do
+      attr_writer :processed_params, :contact
+
+      def processed_params
+        @processed_params
+      end
+    end
+  end
+  let(:service) { host_class.new(inbox: instance_double(Inbox), params: {}) }
+  let(:contact) { instance_double(Contact, id: 'contact-1') }
+  let(:referral) { { source_id: '120200000000001', source_type: 'ad', ctwa_clid: 'clid' } }
+
+  before { service.contact = contact }
+
+  def params_with(message)
+    { messages: [message] }.with_indifferent_access
+  end
+
+  it 'records the referral of the incoming message' do
+    service.processed_params = params_with(id: 'wamid.1', type: 'text', referral: referral)
+    recorder = instance_double(Attribution::RecordService, perform: true)
+
+    expect(Attribution::RecordService).to receive(:new)
+      .with(contact: contact, touch: hash_including('source_id' => '120200000000001'), source: :whatsapp_referral)
+      .and_return(recorder)
+
+    service.send(:record_ad_referral)
+  end
+
+  it 'skips messages without referral' do
+    service.processed_params = params_with(id: 'wamid.1', type: 'text')
+
+    expect(Attribution::RecordService).not_to receive(:new)
+    service.send(:record_ad_referral)
+  end
+
+  it 'never raises when attribution fails' do
+    service.processed_params = params_with(id: 'wamid.1', type: 'text', referral: referral)
+    allow(Attribution::RecordService).to receive(:new).and_raise(StandardError, 'boom')
+
+    expect { service.send(:record_ad_referral) }.not_to raise_error
+  end
+end

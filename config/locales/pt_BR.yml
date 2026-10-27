@@ -210,6 +210,10 @@ pt_BR:
     online:
       delete: '%{contact_name} está Online, por favor, tente novamente mais tarde'
   integration_apps:
+    meta_ads:
+      name: 'Meta Ads'
+      short_description: 'Campanhas, investimento e desempenho de leads da sua conta de anúncios da Meta.'
+      description: 'Conecte sua conta de anúncios da Meta (Facebook/Instagram) para importar campanhas e investimento diário, e ver leads, agendamentos, receita, custo por lead e ROAS por campanha.'
     google_calendar:
       name: 'Google Calendar'
       short_description: 'Sincronização em tempo real de consultas e agenda de procedimentos.'

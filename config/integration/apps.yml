@@ -9,6 +9,39 @@
 # settings_json_schema: the json schema used to validate the settings hash (https://json-schema.org/)
 # settings_form_schema: the formulate schema used in frontend to render settings form (https://vueformulate.com/)
 ########################################################
+meta_ads:
+  id: meta_ads
+  logo: meta_ads.png
+  i18n_key: meta_ads
+  action: /settings/integrations/meta_ads
+  hook_type: account
+  allow_multiple_hooks: false
+  # Managed only through Api::V1::Integrations::MetaAdsController (the access token
+  # is validated against the Graph API and stored encrypted); the generic hooks
+  # endpoint rejects this app.
+  settings_json_schema:
+    {
+      "type": "object",
+      "properties":
+        {
+          "ad_account_id": { "type": "string" },
+          "access_token_encrypted": { "type": "string" },
+          "token_hint": { "type": "string" },
+          "account_name": { "type": ["string", "null"] },
+          "currency": { "type": ["string", "null"] },
+          "timezone_name": { "type": ["string", "null"] },
+          "connection_status": { "type": "string" },
+          "last_synced_at": { "type": ["string", "null"] },
+          "last_sync_started_at": { "type": ["string", "null"] },
+          "last_error": { "type": ["object", "null"] },
+          "sync_in_progress": { "type": "boolean" },
+          "counts": { "type": "object" }
+        },
+      "additionalProperties": true
+    }
+  settings_form_schema: []
+  visible_properties: ["ad_account_id", "account_name", "connection_status"]
+
 google_calendar:
   id: google_calendar
   logo: google_calendar.png

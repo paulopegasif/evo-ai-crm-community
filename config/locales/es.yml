@@ -186,6 +186,10 @@ es:
     online:
       delete: '%{contact_name} está conectado, por favor inténtalo más tarde'
   integration_apps:
+    meta_ads:
+      name: 'Meta Ads'
+      short_description: 'Campañas, inversión y rendimiento de leads de tu cuenta publicitaria de Meta.'
+      description: 'Conecta tu cuenta publicitaria de Meta (Facebook/Instagram) para importar campañas e inversión diaria, y ver leads, citas, ingresos, costo por lead y ROAS por campaña.'
     google_calendar:
       name: 'Google Calendar'
       short_description: 'Sincronización en tiempo real de citas y horarios profesionales.'

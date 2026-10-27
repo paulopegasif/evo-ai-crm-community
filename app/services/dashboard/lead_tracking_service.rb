@@ -17,6 +17,9 @@ module Dashboard
         appointments = appointments.where(user_id: @params[:user_id])
       end
 
+      @filters_contacts = contacts
+      @filters_appointments = appointments
+
       # Contact counts
       total_leads = contacts.count
       
@@ -75,11 +78,12 @@ module Dashboard
           show_rate: show_rate,
           conversion_rate: conversion_rate,
           total_revenue: total_revenue,
-          average_ticket: avg_ticket
+          average_ticket: avg_ticket,
+          **build_ad_kpis(contacts)
         },
         funnel: [
-          { stage: 'Total de Leads', count: total_leads, percentage: 100.0, color: '#2A152F' },
-          { stage: 'Qualificados', count: total_qualified, percentage: qualification_rate, color: '#5C2D63' },
+          { stage: 'Total de Leads', count: total_leads, percentage: 100.0, color: '#C084FC' },
+          { stage: 'Qualificados', count: total_qualified, percentage: qualification_rate, color: '#A855F7' },
           { stage: 'Agendados', count: scheduled_contact_ids.count, percentage: scheduling_rate, color: '#967AB4' },
           { stage: 'Compareceram', count: total_attended, percentage: total_leads.positive? ? ((total_attended.to_f / total_leads) * 100).round(1) : 0.0, color: '#3B82F6' },
           { stage: 'Convertidos / Venda', count: total_won, percentage: conversion_rate, color: '#10B981' }
@@ -97,43 +101,16 @@ module Dashboard
     def build_sources(contacts, appointments)
       sources_hash = Hash.new { |h, k| h[k] = { name: k, leads: 0, scheduled: 0, attended: 0, won: 0, revenue: 0.0 } }
 
-      # Group contacts by utm_source or channel
-      contacts.find_each do |contact|
-        source = contact.custom_attributes&.dig('utm_source') || 
-                 contact.additional_attributes&.dig('utm_source') || 
-                 contact.custom_attributes&.dig('channel') || 
-                 'Direto / Orgânico'
-        sources_hash[source][:leads] += 1
-      end
+      contacts.pluck(:id).each { |id| sources_hash[attribution_for(id)[:source]][:leads] += 1 }
 
-      # Connect appointments to sources via contacts
-      contact_source_map = {}
-      contacts.find_each do |c|
-        src = c.custom_attributes&.dig('utm_source') || 
-              c.additional_attributes&.dig('utm_source') || 
-              c.custom_attributes&.dig('channel') || 
-              'Direto / Orgânico'
-        contact_source_map[c.id] = src
-      end
+      appointment_rows(appointments).each do |contact_id, status, price|
+        row = sources_hash[attribution_for(contact_id)[:source]]
+        row[:scheduled] += 1
+        next unless status == 'attended'
 
-      appointments.each do |apt|
-        src = contact_source_map[apt.contact_id] || 'Direto / Orgânico'
-        sources_hash[src][:scheduled] += 1
-        if apt.status == 'attended'
-          sources_hash[src][:attended] += 1
-          sources_hash[src][:won] += 1
-          sources_hash[src][:revenue] += apt.price.to_f
-        end
-      end
-
-      # Provide default realistic channels if empty (new setup)
-      if sources_hash.empty?
-        return [
-          { name: 'Instagram Ads', leads: 0, scheduled: 0, attended: 0, won: 0, revenue: 0.0, conversion_rate: 0.0 },
-          { name: 'Google Ads', leads: 0, scheduled: 0, attended: 0, won: 0, revenue: 0.0, conversion_rate: 0.0 },
-          { name: 'WhatsApp Direto', leads: 0, scheduled: 0, attended: 0, won: 0, revenue: 0.0, conversion_rate: 0.0 },
-          { name: 'Indicação / Referral', leads: 0, scheduled: 0, attended: 0, won: 0, revenue: 0.0, conversion_rate: 0.0 }
-        ]
+        row[:attended] += 1
+        row[:won] += 1
+        row[:revenue] += price.to_f
       end
 
       sources_hash.values.map do |s|
@@ -143,31 +120,133 @@ module Dashboard
     end
 
     def build_campaigns(contacts, appointments)
-      campaigns_hash = Hash.new { |h, k| h[k] = { name: k, source: '', leads: 0, scheduled: 0, won: 0, revenue: 0.0 } }
-
-      contact_campaign_map = {}
-      contacts.find_each do |c|
-        camp = c.custom_attributes&.dig('utm_campaign') || 'Padrão / Institucional'
-        src = c.custom_attributes&.dig('utm_source') || 'Instagram'
-        campaigns_hash[camp][:name] = camp
-        campaigns_hash[camp][:source] = src
-        campaigns_hash[camp][:leads] += 1
-        contact_campaign_map[c.id] = camp
+      campaigns_hash = {}
+      row_for = lambda do |attribution|
+        campaigns_hash[attribution[:campaign_key]] ||= {
+          campaign_key: attribution[:campaign_key],
+          meta_campaign_id: attribution[:meta_campaign_id],
+          name: attribution[:campaign_name],
+          source: attribution[:source],
+          leads: 0, scheduled: 0, attended: 0, won_contact_ids: Set.new, revenue: 0.0
+        }
       end
 
-      appointments.each do |apt|
-        camp = contact_campaign_map[apt.contact_id] || 'Padrão / Institucional'
-        campaigns_hash[camp][:scheduled] += 1
-        if apt.status == 'attended'
-          campaigns_hash[camp][:won] += 1
-          campaigns_hash[camp][:revenue] += apt.price.to_f
-        end
+      contacts.pluck(:id).each { |id| row_for.call(attribution_for(id))[:leads] += 1 }
+
+      appointment_rows(appointments).each do |contact_id, status, price|
+        row = row_for.call(attribution_for(contact_id))
+        row[:scheduled] += 1
+        next unless status == 'attended'
+
+        row[:attended] += 1
+        row[:won_contact_ids] << contact_id
+        row[:revenue] += price.to_f
+      end
+
+      # Campaigns that spent in the period without any attributed lead still show up.
+      (campaign_spend.keys - campaigns_hash.values.filter_map { |c| c[:meta_campaign_id] }).each do |meta_id|
+        row_for.call(meta_campaign_attribution(meta_id, meta_campaign_names[meta_id]))
       end
 
       campaigns_hash.values.map do |c|
-        rate = c[:leads].positive? ? ((c[:won].to_f / c[:leads]) * 100).round(1) : 0.0
-        c.merge(conversion_rate: rate)
-      end.sort_by { |c| -c[:revenue] }
+        won = c.delete(:won_contact_ids).size
+        spend = c[:meta_campaign_id] ? campaign_spend[c[:meta_campaign_id]] : nil
+        c.merge(
+          won: won,
+          conversion_rate: c[:leads].positive? ? ((won.to_f / c[:leads]) * 100).round(1) : 0.0,
+          spend: spend&.to_f,
+          cpl: ratio(spend, c[:leads]),
+          cac: ratio(spend, won),
+          roas: ratio(c[:revenue], spend, precision: 2)
+        )
+      end.sort_by { |c| [-c[:revenue], -(c[:spend] || 0), -c[:leads]] }
+    end
+
+    # Spend KPIs are only meaningful when Meta Ads is (or was) connected.
+    def build_ad_kpis(contacts)
+      ad_spend = campaign_spend.values.sum.to_f
+      has_ad_spend = MetaAds::Integration.current.present? || ad_spend.positive?
+      ad_leads = contacts.pluck(:id).count { |id| attribution_for(id)[:from_ad] }
+
+      { ad_spend: ad_spend, ad_leads: ad_leads, avg_cpl: ratio(ad_spend, ad_leads), has_ad_spend: has_ad_spend }
+    end
+
+    def appointment_rows(appointments)
+      @appointment_rows ||= appointments.where.not(contact_id: nil).pluck(:contact_id, :status, :price)
+    end
+
+    # --- Lead attribution (first touch; see Attribution::RecordService) -----------
+
+    SOURCE_SQL = "COALESCE(NULLIF(contacts.additional_attributes->>'utm_source', ''), " \
+                 "NULLIF(contacts.custom_attributes->>'utm_source', ''), " \
+                 "NULLIF(contacts.custom_attributes->>'channel', ''))"
+    UTM_CAMPAIGN_SQL = "COALESCE(NULLIF(contacts.additional_attributes->>'utm_campaign', ''), " \
+                       "NULLIF(contacts.custom_attributes->>'utm_campaign', ''))"
+    AD_ID_SQL = "NULLIF(contacts.additional_attributes->>'ad_id', '')"
+    SOURCE_LABELS = { 'meta_ads' => 'Meta Ads' }.freeze
+    UNKNOWN_SOURCE = 'Não informada'
+    NO_CAMPAIGN = 'Sem campanha'
+
+    def attribution_for(contact_id)
+      attribution_map[contact_id] || no_attribution
+    end
+
+    # contact_id => { source:, campaign_key:, campaign_name:, meta_campaign_id:, from_ad: }
+    # for every contact counted as a lead or holding an appointment in the period.
+    def attribution_map
+      @attribution_map ||= begin
+        ids = (@filters_contacts.pluck(:id) + appointment_rows(@filters_appointments).map(&:first)).uniq
+        Contact.where(id: ids)
+               .joins('LEFT JOIN meta_ads ON meta_ads.meta_id = contacts.additional_attributes->>\'ad_id\'')
+               .joins('LEFT JOIN meta_campaigns ON meta_campaigns.meta_id = meta_ads.meta_campaign_id')
+               .pluck(Arel.sql('contacts.id'), Arel.sql(SOURCE_SQL), Arel.sql(AD_ID_SQL), Arel.sql(UTM_CAMPAIGN_SQL),
+                      Arel.sql('meta_campaigns.meta_id'), Arel.sql('meta_campaigns.name'))
+               .to_h { |id, source, ad_id, utm_campaign, meta_id, meta_name| [id, build_attribution(source, ad_id, utm_campaign, meta_id, meta_name)] }
+      end
+    end
+
+    def build_attribution(source, ad_id, utm_campaign, meta_campaign_id, meta_campaign_name)
+      return meta_campaign_attribution(meta_campaign_id, meta_campaign_name) if meta_campaign_id.present?
+
+      source_label = SOURCE_LABELS.fetch(source, source.presence || UNKNOWN_SOURCE)
+      key, name = if ad_id.present?
+                    ["ad:#{ad_id}", "Anúncio #{ad_id}"]
+                  elsif utm_campaign.present?
+                    ["utm:#{utm_campaign}", utm_campaign]
+                  else
+                    ['none', NO_CAMPAIGN]
+                  end
+      { source: source_label, campaign_key: key, campaign_name: name, meta_campaign_id: nil,
+        from_ad: ad_id.present? || source == 'meta_ads' }
+    end
+
+    def meta_campaign_attribution(meta_id, name)
+      { source: SOURCE_LABELS['meta_ads'], campaign_key: "meta:#{meta_id}", campaign_name: name.presence || "Campanha #{meta_id}",
+        meta_campaign_id: meta_id, from_ad: true }
+    end
+
+    def no_attribution
+      { source: UNKNOWN_SOURCE, campaign_key: 'none', campaign_name: NO_CAMPAIGN, meta_campaign_id: nil, from_ad: false }
+    end
+
+    # meta_campaign_id => spend (BigDecimal) within the period's calendar days.
+    def campaign_spend
+      @campaign_spend ||= MetaAds::InsightDaily
+                          .where(date: @filters.time_range.begin.to_date..@filters.time_range.end.to_date)
+                          .where.not(meta_campaign_id: nil)
+                          .group(:meta_campaign_id)
+                          .sum(:spend)
+    end
+
+    def meta_campaign_names
+      @meta_campaign_names ||= MetaAds::Campaign.where(meta_id: campaign_spend.keys).pluck(:meta_id, :name).to_h
+    end
+
+    # nil (rendered as "—") when there is no denominator or no numerator source.
+    def ratio(numerator, denominator, precision: 2)
+      return nil if numerator.nil? || denominator.nil? || denominator.to_f.zero?
+
+      (numerator.to_f / denominator.to_f).round(precision)
     end
 
     def build_professionals(appointments)

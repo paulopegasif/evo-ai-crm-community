@@ -6,7 +6,11 @@ class Api::V1::Integrations::HooksController < Api::V1::BaseController
     process_event: 'integrations.execute'
   })
 
+  # Apps whose settings carry credentials validated by a dedicated controller.
+  DEDICATED_APPS = %w[meta_ads].freeze
+
   before_action :fetch_hook, except: [:create]
+  before_action :reject_dedicated_app, only: [:create, :update]
 
   def create
     @hook = Integrations::Hook.create!(permitted_params)
@@ -75,6 +79,16 @@ class Api::V1::Integrations::HooksController < Api::V1::BaseController
   end
 
   private
+
+  def reject_dedicated_app
+    app_id = @hook&.app_id || params.dig(:hook, :app_id)
+    return unless DEDICATED_APPS.include?(app_id.to_s)
+
+    error_response(
+      ApiErrorCodes::BUSINESS_RULE_VIOLATION,
+      "Use the dedicated /integrations/#{app_id} endpoint to configure this integration"
+    )
+  end
 
   def fetch_hook
     @hook = Integrations::Hook.find(params[:id])

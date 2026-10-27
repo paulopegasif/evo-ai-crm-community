@@ -30,7 +30,7 @@ class Appointment < ApplicationRecord
 
   CATEGORIES = [
     { name: 'Avaliação Facial', color: '#967AB4', duration: 45, price: 100.0, description: 'Diagnóstico e plano de tratamento personalizado' },
-    { name: 'Harmonização Facial', color: '#2A152F', duration: 90, price: 1800.0, description: 'Preenchimento e alinhamento facial completo' },
+    { name: 'Harmonização Facial', color: '#C084FC', duration: 90, price: 1800.0, description: 'Preenchimento e alinhamento facial completo' },
     { name: 'Limpeza de Pele Profunda', color: '#3B82F6', duration: 60, price: 220.0, description: 'Higienização, extração e hidratação profunda' },
     { name: 'Toxina Botulínica (Botox)', color: '#EC4899', duration: 45, price: 1200.0, description: 'Aplicação preventiva e corretiva de rugas e linhas' },
     { name: 'Bioestimulador de Colágeno', color: '#F59E0B', duration: 60, price: 1500.0, description: 'Estímulo de firmeza tecidual e rejuvenescimento' },

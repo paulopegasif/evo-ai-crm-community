@@ -88,3 +88,10 @@ automation_rule_runs_cleanup_job:
   cron: '45 3 * * *'
   class: 'AutomationRuleRunsCleanupJob'
   queue: low
+
+# executed hourly to import Meta Ads campaigns and daily spend (no-op when not connected)
+meta_ads_sync_job:
+  cron: '15 * * * *'
+  class: 'MetaAds::SyncJob'
+  queue: scheduled_jobs
+  description: 'Sync Meta Ads campaigns, ad sets, ads and daily insights'

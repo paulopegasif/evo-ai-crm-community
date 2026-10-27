@@ -12,6 +12,7 @@ class Public::Leads::CreationService
       validate_pipeline_and_stage!
 
       @contact = find_or_create_contact
+      record_attribution
       @pipeline_item = create_pipeline_item
 
       publish_events
@@ -218,6 +219,12 @@ class Public::Leads::CreationService
 
   def custom_fields_params
     @lead_params[:custom_fields] || {}
+  end
+
+  # First-touch lead origin from the UTMs sent in metadata (public API and CRM forms).
+  def record_attribution
+    source = metadata_params.to_h.with_indifferent_access[:lead_source] == 'crm_form' ? :form : :public_api
+    Attribution::RecordService.new(contact: @contact, touch: metadata_params.to_h, source: source).perform
   end
 
   def metadata_params
