@@ -121,7 +121,7 @@ RSpec.describe MetaAds::SyncJob do
     described_class.perform_now
 
     expect(integration.connection_status).to eq('token_invalid')
-    expect(integration.settings.dig('last_error', 'message')).to eq('Token revoked')
+    expect(integration.settings.dig('last_error', 'message')).to include('Token revoked')
     expect(MetaAds::Campaign.count).to eq(2)
     expect(integration.syncable?).to be(false)
   end

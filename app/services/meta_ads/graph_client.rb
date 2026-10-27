@@ -25,6 +25,15 @@ class MetaAds::GraphClient
   PERMISSION_ERROR_CODES = [10, 200].freeze
   RATE_LIMIT_ERROR_CODES = [4, 17, 32, 613, 80_000, 80_004].freeze
   TIMEOUT = 30
+  LOCALIZED_MESSAGES = {
+    190 => 'Token de acesso inválido, expirado ou revogado.',
+    102 => 'Sessão do token inválida.',
+    4 => 'Limite de requisições da Meta atingido; a próxima sincronização tenta novamente.',
+    17 => 'Limite de requisições da Meta atingido; a próxima sincronização tenta novamente.',
+    32 => 'Limite de requisições da Meta atingido; a próxima sincronização tenta novamente.',
+    613 => 'Limite de requisições da Meta atingido; a próxima sincronização tenta novamente.',
+    80_004 => 'Limite de requisições da Meta atingido; a próxima sincronização tenta novamente.'
+  }.freeze
 
   def initialize(access_token:, version: nil, app_secret: nil)
     @access_token = access_token
@@ -82,15 +91,16 @@ class MetaAds::GraphClient
     error ||= {}
     code = error['code']
     subcode = error['error_subcode']
-    message = error['error_user_msg'].presence || error['message'].presence || "Erro HTTP #{http_status} da Meta"
+    meta_message = error['error_user_msg'].presence || error['message'].presence || "Erro HTTP #{http_status} da Meta"
+    message = LOCALIZED_MESSAGES[code] ? "#{LOCALIZED_MESSAGES[code]} (Meta: #{meta_message})" : meta_message
 
-    klass = if TOKEN_ERROR_CODES.include?(code) || PERMISSION_ERROR_CODES.include?(code)
-              TokenInvalidError
-            elsif RATE_LIMIT_ERROR_CODES.include?(code)
-              RateLimitedError
-            else
-              ApiError
-            end
-    raise klass.new(message, code: code, subcode: subcode)
+    raise error_class(code).new(message, code: code, subcode: subcode)
+  end
+
+  def error_class(code)
+    return TokenInvalidError if TOKEN_ERROR_CODES.include?(code) || PERMISSION_ERROR_CODES.include?(code)
+    return RateLimitedError if RATE_LIMIT_ERROR_CODES.include?(code)
+
+    ApiError
   end
 end

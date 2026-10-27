@@ -98,7 +98,7 @@ RSpec.describe 'Integrations Meta Ads', type: :request do
       put path, params: { ad_account_id: 'act_1234567890', access_token: 'bad' }, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(JSON.parse(response.body).dig('error', 'message')).to include('Session has expired')
+      expect(JSON.parse(response.body).dig('error', 'message')).to include('Token de acesso inválido', 'Session has expired')
       expect(Integrations::Hook.where(app_id: 'meta_ads')).to be_empty
     end
 
@@ -133,6 +133,16 @@ RSpec.describe 'Integrations Meta Ads', type: :request do
   end
 
   describe 'token exposure' do
+    it 'shows the catalog card as disconnected once the token is invalid' do
+      connect!
+      MetaAds::Integration.current.write!('connection_status' => 'token_invalid')
+
+      get '/api/v1/integrations/apps'
+
+      card = JSON.parse(response.body)['data'].find { |app| app['id'] == 'meta_ads' }
+      expect(card['enabled']).to be(false)
+    end
+
     it 'never returns the token from the generic integrations catalog' do
       connect!
 
