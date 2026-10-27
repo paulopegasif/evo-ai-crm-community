@@ -95,8 +95,13 @@ class Public::Forms::SubmissionService
       contact: contact,
       deal: { pipeline_id: pipeline_id, stage_id: stage_id, value: deal_value }.compact,
       custom_fields: deal_fields,
-      metadata: { form_slug: @form.slug, lead_source: 'crm_form' }
+      metadata: tracking.merge(form_slug: @form.slug, lead_source: 'crm_form')
     }
+  end
+
+  # UTM/fbclid captured by the public form page, used for first-touch attribution.
+  def tracking
+    (@params[:tracking] || {}).to_h.symbolize_keys.slice(*Attribution::RecordService::UTM_KEYS.map(&:to_sym))
   end
 
   # Standard contact target keys -> CreationService contact param keys.

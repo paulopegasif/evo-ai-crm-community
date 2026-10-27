@@ -32,6 +32,7 @@ class Whatsapp::IncomingMessageBaseService
     set_contact
     return unless @contact
 
+    record_ad_referral
     set_conversation
     create_messages
     clear_message_source_id_from_redis
@@ -134,6 +135,17 @@ class Whatsapp::IncomingMessageBaseService
 
     # Always persist BSUID and username when present
     update_bsuid_fields(contact_inbox, bsuid, username)
+  end
+
+  # Click-to-WhatsApp ads (and boosted posts) attach a `referral` object to the
+  # message that opened the conversation. Attribution must never block the message.
+  def record_ad_referral
+    referral = @processed_params[:messages]&.first&.dig(:referral)
+    return if referral.blank?
+
+    Attribution::RecordService.new(contact: @contact, touch: referral, source: :whatsapp_referral).perform
+  rescue StandardError => e
+    Rails.logger.error "WhatsApp referral attribution failed for contact #{@contact&.id}: #{e.message}"
   end
 
   def update_bsuid_fields(contact_inbox, bsuid, username)

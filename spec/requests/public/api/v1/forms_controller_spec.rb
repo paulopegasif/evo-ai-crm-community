@@ -106,6 +106,18 @@ RSpec.describe 'Public CRM Forms API', type: :request do
       expect(response).to have_http_status(:created)
     end
 
+    it 'stores the page UTMs as the contact first-touch origin' do
+      post path, params: {
+        submission: { full_name: 'Bia', email: "bia-#{SecureRandom.hex(4)}@example.com" },
+        tracking: { utm_source: 'instagram', utm_campaign: 'harmonizacao', evil: 'x' }
+      }, as: :json
+
+      expect(response).to have_http_status(:created)
+      attrs = Contact.find(JSON.parse(response.body)['lead_id']).additional_attributes
+      expect(attrs).to include('utm_source' => 'instagram', 'utm_campaign' => 'harmonizacao', 'attribution_channel' => 'form')
+      expect(attrs).not_to have_key('evil')
+    end
+
     it 'returns 422 when a required field is missing' do
       expect do
         post path, params: { submission: { full_name: 'No Email' } }, as: :json

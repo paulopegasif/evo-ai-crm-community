@@ -55,8 +55,9 @@ class Public::Api::V1::FormsController < PublicController
     value.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
   end
 
-  # Permits an arbitrary set of field keys under :submission (forms are dynamic).
+  # Permits an arbitrary set of field keys under :submission (forms are dynamic),
+  # plus the page's UTM/fbclid parameters under :tracking for lead attribution.
   def submission_params
-    params.permit(submission: {})
+    params.permit(submission: {}, tracking: Attribution::RecordService::UTM_KEYS)
   end
 end
