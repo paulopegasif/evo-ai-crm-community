@@ -78,8 +78,8 @@ module Dashboard
           average_ticket: avg_ticket
         },
         funnel: [
-          { stage: 'Total de Leads', count: total_leads, percentage: 100.0, color: '#2A152F' },
-          { stage: 'Qualificados', count: total_qualified, percentage: qualification_rate, color: '#5C2D63' },
+          { stage: 'Total de Leads', count: total_leads, percentage: 100.0, color: '#C084FC' },
+          { stage: 'Qualificados', count: total_qualified, percentage: qualification_rate, color: '#A855F7' },
           { stage: 'Agendados', count: scheduled_contact_ids.count, percentage: scheduling_rate, color: '#967AB4' },
           { stage: 'Compareceram', count: total_attended, percentage: total_leads.positive? ? ((total_attended.to_f / total_leads) * 100).round(1) : 0.0, color: '#3B82F6' },
           { stage: 'Convertidos / Venda', count: total_won, percentage: conversion_rate, color: '#10B981' }
