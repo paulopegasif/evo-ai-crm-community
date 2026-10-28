@@ -19,7 +19,7 @@ class Api::V1::DashboardController < Api::V1::BaseController
 
   def leads
     leads_data = Dashboard::LeadTrackingService.new(
-      params: dashboard_params
+      params: dashboard_params.merge(params.permit(:timezone))
     ).call
 
     success_response(
