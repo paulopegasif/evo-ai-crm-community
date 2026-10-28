@@ -85,4 +85,95 @@ RSpec.describe Dashboard::LeadTrackingService do
     expect(data[:campaigns]).to eq([])
     expect(data[:kpis]).to include(ad_spend: 0.0, avg_cpl: nil, has_ad_spend: false)
   end
+
+  def appointment(contact, status, price: 0, start_time: 2.days.ago, category: 'Geral', user: professional)
+    Appointment.create!(title: 'Consulta', start_time: start_time, end_time: start_time + 1.hour, user: user,
+                        contact: contact, status: status, price: price, category: category)
+  end
+
+  describe 'lead funnel' do
+    it 'counts people, so every stage is a subset of the previous one' do
+      leads = Array.new(10) { lead }
+      leads.first(6).each { |c| appointment(c, 'scheduled') }
+      appointment(leads[0], 'scheduled') # second appointment of the same lead
+      leads.first(3).each { |c| appointment(c, 'attended', price: 500) }
+      appointment(leads[3], 'attended', price: 0) # attended a free evaluation: not a sale
+      appointment(leads[4], 'cancelled')
+
+      funnel = result[:funnel].index_by { |s| s[:key] }
+
+      expect(funnel.transform_values { |s| s[:count] })
+        .to eq('leads' => 10, 'qualified' => 6, 'scheduled' => 6, 'attended' => 4, 'won' => 3)
+      expect(funnel['attended']).to include(percentage: 40.0, step_rate: 66.7)
+      expect(funnel['won']).to include(percentage: 30.0, step_rate: 75.0)
+    end
+
+    it 'ignores appointments of contacts created before the period' do
+      old = lead
+      old.update_columns(created_at: 60.days.ago)
+      appointment(old, 'attended', price: 900)
+      lead
+
+      kpis = result[:kpis]
+
+      expect(kpis).to include(total_leads: 1, total_scheduled: 0, total_won: 0, scheduling_rate: 0.0)
+      # The agenda still reflects the visit and its revenue.
+      expect(kpis).to include(appointments_attended: 1, total_revenue: 900.0)
+    end
+
+    it 'returns nil rates when there are no leads' do
+      expect(result[:kpis]).to include(scheduling_rate: nil, conversion_rate: nil)
+      expect(result[:funnel].map { |s| s[:percentage] }).to all(be_nil)
+    end
+  end
+
+  describe 'period agenda' do
+    it 'computes the show rate over finished appointments only, and confirmed separately from pending' do
+      contact = lead
+      appointment(contact, 'attended', price: 300)
+      appointment(contact, 'no_show')
+      appointment(contact, 'confirmed', start_time: 1.day.from_now.beginning_of_day)
+      appointment(contact, 'scheduled', start_time: 1.day.from_now.beginning_of_day)
+
+      expect(result[:kpis]).to include(
+        total_appointments: 4, total_confirmed: 1, total_pending: 2, show_rate: 50.0,
+        total_revenue: 300.0, paid_appointments: 1, average_ticket: 300.0
+      )
+    end
+
+    it 'leaves the show rate of a professional without finished appointments empty instead of 100%' do
+      appointment(lead, 'scheduled', start_time: 1.day.from_now.beginning_of_day)
+
+      expect(result[:professionals].first).to include(total: 1, pending: 1, show_rate: nil)
+    end
+
+    it 'reports the revenue share of each procedure next to its volume share' do
+      contact = lead
+      appointment(contact, 'attended', price: 900, category: 'Botox')
+      appointment(contact, 'attended', price: 100, category: 'Avaliação')
+      appointment(contact, 'scheduled', category: 'Avaliação', start_time: 1.day.from_now.beginning_of_day)
+
+      categories = result[:categories].index_by { |c| c[:name] }
+
+      expect(categories['Botox']).to include(count: 1, revenue: 900.0, share_percentage: 33.3, revenue_share: 90.0)
+      expect(categories['Avaliação']).to include(count: 2, revenue: 100.0, share_percentage: 66.7, revenue_share: 10.0)
+    end
+  end
+
+  describe 'timeline' do
+    it 'buckets days in the viewer timezone and includes daily ad spend' do
+      travel_to Time.utc(2026, 10, 20, 12) do
+        # 01:30 UTC on the 20th is still the 19th in São Paulo.
+        contact = lead
+        contact.update_columns(created_at: Time.utc(2026, 10, 20, 1, 30))
+        MetaAds::InsightDaily.create!(meta_ad_id: '8001', meta_campaign_id: '6001', date: Date.new(2026, 10, 19), spend: 42)
+
+        data = described_class.new(params: params.merge(timezone: 'America/Sao_Paulo')).call
+        day = data[:timeline].find { |d| d[:date] == '2026-10-19' }
+
+        expect(day).to include(leads: 1, spend: 42.0)
+        expect(data[:period][:timezone]).to eq('America/Sao_Paulo')
+      end
+    end
+  end
 end
