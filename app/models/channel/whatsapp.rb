@@ -43,6 +43,7 @@ class Channel::Whatsapp < ApplicationRecord
   # subscribed_apps call, so the number stays disconnected from webhooks.
   after_update_commit :subscribe,
                       if: -> { provider == 'whatsapp_cloud' && saved_change_to_provider_config? }
+  after_create_commit -> { Whatsapp::PhoneNumberRegistrationService.new(channel: self).perform }
   after_create :sync_templates
   before_destroy :unsubscribe
 
