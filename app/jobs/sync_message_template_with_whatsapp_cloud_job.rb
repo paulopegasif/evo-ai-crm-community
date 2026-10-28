@@ -23,7 +23,8 @@ class SyncMessageTemplateWithWhatsappCloudJob < ApplicationJob
       'name' => message_template.name,
       'category' => message_template.category,
       'language' => message_template.language,
-      'components' => meta_components(message_template)
+      'components' => meta_components(message_template),
+      'variables' => message_template.variables
     )
   rescue StandardError => e
     # Publishing to Meta is non-idempotent (a template name can only be created
