@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_26_120100) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_29_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -836,6 +836,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_26_120100) do
     t.string "currency"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "link_clicks", default: 0, null: false
+    t.bigint "conversations", default: 0, null: false
+    t.bigint "meta_leads", default: 0, null: false
+    t.jsonb "actions", default: [], null: false
     t.index ["meta_ad_id", "date"], name: "index_meta_ad_insights_daily_on_meta_ad_id_and_date", unique: true
     t.index ["meta_campaign_id", "date"], name: "index_meta_ad_insights_daily_on_meta_campaign_id_and_date"
   end

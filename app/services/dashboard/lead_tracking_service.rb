@@ -11,9 +11,22 @@ module Dashboard
   #
   # Day boundaries follow the viewer's `timezone` param. Ratios are nil (rendered
   # as "—") when their denominator is zero.
+  #
+  # `source` and `campaign_key` narrow the lead cohort to one first-touch origin or
+  # campaign and the paid media metrics to that Meta campaign; the period agenda is
+  # never filtered by them.
   class LeadTrackingService
     DEFAULT_TIMEZONE = 'America/Sao_Paulo'
     PENDING_STATUSES = %w[scheduled confirmed rescheduled].freeze
+    GRANULARITIES = %w[day week month].freeze
+    # Longest period (in days) still charted per day / per week.
+    DAILY_MAX_DAYS = 62
+    WEEKLY_MAX_DAYS = 366
+    MONTH_LABELS = %w[jan fev mar abr mai jun jul ago set out nov dez].freeze
+    # Summed per campaign and period; reach is left out since daily reach does not add up.
+    MEDIA_COLUMNS = %i[spend impressions link_clicks conversations meta_leads].freeze
+    MEDIA_METRIC_KEYS = %i[impressions link_clicks ctr cpc cpm conversations cost_per_conversation meta_leads
+                           cost_per_meta_lead].freeze
 
     def initialize(params:)
       @params = params
@@ -35,8 +48,11 @@ module Dashboard
           since: time_range.begin.to_i,
           until: time_range.end.to_i,
           days: period_days.size,
-          timezone: @timezone
+          timezone: @timezone,
+          granularity: granularity,
+          ads_history_from: ads_history_from
         },
+        filter_options: filter_options,
         kpis: cohort_kpis.merge(agenda_kpis).merge(ad_kpis),
         funnel: build_funnel,
         sources: build_sources,
@@ -64,10 +80,27 @@ module Dashboard
       professional_id ? scope.where(user_id: professional_id) : scope
     end
 
+    def source_filter
+      @params[:source].presence
+    end
+
+    def campaign_filter
+      @params[:campaign_key].presence
+    end
+
     # --- Lead cohort --------------------------------------------------------------
 
+    # Every lead of the period, before the source/campaign filters.
+    def period_lead_ids
+      @period_lead_ids ||= Contact.where(created_at: time_range).pluck(:id)
+    end
+
     def cohort_ids
-      @cohort_ids ||= Contact.where(created_at: time_range).pluck(:id)
+      @cohort_ids ||= period_lead_ids.select do |id|
+        attribution = attribution_for(id)
+        (source_filter.nil? || attribution[:source] == source_filter) &&
+          (campaign_filter.nil? || attribution[:campaign_key] == campaign_filter)
+      end
     end
 
     # [contact_id, status, price] of the cohort's non-cancelled appointments.
@@ -216,23 +249,61 @@ module Dashboard
       end.sort_by { |c| [-c[:revenue], -c[:count]] }
     end
 
-    def build_timeline
-      leads = Contact.where(id: cohort_ids).pluck(:created_at).map(&:to_date).tally
-      agenda = agenda_rows.group_by { |row| row[4].to_date }
-      spend = MetaAds::InsightDaily.where(date: period_days).group(:date).sum(:spend)
+    # --- Timeline -----------------------------------------------------------------
 
-      period_days.map do |day|
-        rows = agenda.fetch(day, [])
+    def granularity
+      @granularity ||= if GRANULARITIES.include?(@params[:granularity].to_s)
+                         @params[:granularity].to_s
+                       elsif period_days.size <= DAILY_MAX_DAYS
+                         'day'
+                       elsif period_days.size <= WEEKLY_MAX_DAYS
+                         'week'
+                       else
+                         'month'
+                       end
+    end
+
+    def bucket_start(day)
+      case granularity
+      when 'week' then day.beginning_of_week(:monday)
+      when 'month' then day.beginning_of_month
+      else day
+      end
+    end
+
+    def bucket_label(start)
+      case granularity
+      when 'week' then "sem. #{start.strftime('%d/%m')}"
+      when 'month' then "#{MONTH_LABELS[start.month - 1]}/#{start.strftime('%y')}"
+      else start.strftime('%d/%m')
+      end
+    end
+
+    def build_timeline
+      leads = Contact.where(id: cohort_ids).pluck(:created_at).map { |at| bucket_start(at.to_date) }.tally
+      agenda = agenda_rows.group_by { |row| bucket_start(row[4].to_date) }
+      media = media_by_bucket
+
+      period_days.group_by { |day| bucket_start(day) }.map do |start, days|
+        rows = agenda.fetch(start, [])
         attended = rows.select { |row| row[1] == 'attended' }
         {
-          date: day.iso8601,
-          label: day.strftime('%d/%m'),
-          leads: leads.fetch(day, 0),
+          date: days.first.iso8601,
+          start_date: days.first.iso8601,
+          end_date: days.last.iso8601,
+          label: bucket_label(start),
+          leads: leads.fetch(start, 0),
           scheduled: rows.count { |row| row[1] != 'cancelled' },
           attended: attended.size,
-          revenue: attended.sum { |row| row[2].to_f }.round(2),
-          spend: spend.fetch(day, 0).to_f
-        }
+          revenue: attended.sum { |row| row[2].to_f }.round(2)
+        }.merge(media.fetch(start, empty_media).except(:spend), spend: media.fetch(start, empty_media)[:spend].to_f.round(2))
+      end
+    end
+
+    def media_by_bucket
+      media_scope.group(:date).pluck(:date, *media_sums).each_with_object({}) do |(date, *values), acc|
+        totals = acc[bucket_start(date)] ||= empty_media
+        MEDIA_COLUMNS.zip(values).each { |column, value| totals[column] += value || 0 }
       end
     end
 
@@ -252,9 +323,9 @@ module Dashboard
       attribution_map[contact_id] || no_attribution
     end
 
-    # contact_id => { source:, campaign_key:, campaign_name:, meta_campaign_id:, from_ad: } for the cohort.
+    # contact_id => { source:, campaign_key:, campaign_name:, meta_campaign_id:, from_ad: } for the period's leads.
     def attribution_map
-      @attribution_map ||= Contact.where(id: cohort_ids)
+      @attribution_map ||= Contact.where(id: period_lead_ids)
                                   .joins('LEFT JOIN meta_ads ON meta_ads.meta_id = contacts.additional_attributes->>\'ad_id\'')
                                   .joins('LEFT JOIN meta_campaigns ON meta_campaigns.meta_id = meta_ads.meta_campaign_id')
                                   .pluck(Arel.sql('contacts.id'), Arel.sql(SOURCE_SQL), Arel.sql(AD_ID_SQL),
@@ -323,24 +394,52 @@ module Dashboard
 
       cohort_ids.each { |id| add_lead(row_for.call(attribution_for(id)), id) }
       # Campaigns that spent in the period without any attributed lead still show up.
-      campaign_spend.each_key { |meta_id| row_for.call(meta_campaign_attribution(meta_id, meta_campaign_names[meta_id])) }
+      campaign_media.each_key { |meta_id| row_for.call(meta_campaign_attribution(meta_id, meta_campaigns.dig(meta_id, :name))) }
 
-      rows.values.map do |c|
-        spend = c[:meta_campaign_id] ? campaign_spend[c[:meta_campaign_id]]&.to_f : nil
-        c.merge(
-          revenue: c[:revenue].round(2),
-          conversion_rate: percent(c[:won], c[:leads]),
-          spend: spend,
-          cpl: ratio(spend, c[:leads]),
-          cac: ratio(spend, c[:won]),
-          roas: ratio(spend && c[:revenue], spend)
-        )
-      end.sort_by { |c| [-(c[:spend] || 0), -c[:revenue], -c[:leads]] }
+      rows.values.map { |c| c.merge(campaign_metrics(c)) }
+          .sort_by { |c| [-(c[:spend] || 0), -c[:revenue], -c[:leads]] }
     end
 
-    # Spend KPIs are only meaningful when Meta Ads is (or was) connected.
+    # CRM outcome ratios plus the Meta delivery and results of one campaign row.
+    # Media columns are nil for campaigns that are not Meta campaigns.
+    def campaign_metrics(row)
+      media = row[:meta_campaign_id] ? campaign_media.fetch(row[:meta_campaign_id], empty_media) : nil
+      spend = media && media[:spend].to_f.round(2)
+      {
+        status: row[:meta_campaign_id] ? meta_campaigns.dig(row[:meta_campaign_id], :status) : nil,
+        revenue: row[:revenue].round(2),
+        conversion_rate: percent(row[:won], row[:leads]),
+        spend: spend,
+        cpl: ratio(spend, row[:leads]),
+        cac: ratio(spend, row[:won]),
+        roas: ratio(spend && row[:revenue], spend)
+      }.merge(media_metrics(media))
+    end
+
+    def media_metrics(media)
+      return MEDIA_METRIC_KEYS.index_with { nil } if media.nil?
+
+      spend = media[:spend].to_f
+      {
+        impressions: media[:impressions].to_i,
+        link_clicks: media[:link_clicks].to_i,
+        ctr: percent(media[:link_clicks], media[:impressions], precision: 2),
+        cpc: ratio(spend, media[:link_clicks]),
+        cpm: ratio(spend * 1000, media[:impressions]),
+        conversations: media[:conversations].to_i,
+        cost_per_conversation: ratio(spend, media[:conversations]),
+        meta_leads: media[:meta_leads].to_i,
+        cost_per_meta_lead: ratio(spend, media[:meta_leads])
+      }
+    end
+
+    # Spend KPIs are only meaningful when Meta Ads is (or was) connected, and never
+    # for a source or campaign filter outside Meta.
     def ad_kpis
-      spend = campaign_spend.values.sum.to_f
+      totals = campaign_media.values.each_with_object(empty_media) do |media, acc|
+        MEDIA_COLUMNS.each { |column| acc[column] += media[column] }
+      end
+      spend = totals[:spend].to_f
       ad_ids = cohort_ids.select { |id| attribution_for(id)[:from_ad] }
       ad_won = ad_ids.count { |id| won_ids.include?(id) }
       ad_revenue = ad_ids.sum { |id| cohort_revenue[id] }.round(2)
@@ -353,27 +452,77 @@ module Dashboard
         avg_cpl: ratio(spend, ad_ids.size),
         ad_cac: ratio(spend, ad_won),
         roas: ratio(ad_revenue, spend),
-        has_ad_spend: MetaAds::Integration.current.present? || spend.positive?
-      }
+        has_ad_spend: !paid_media_excluded? && (MetaAds::Integration.current.present? || spend.positive?)
+      }.merge(media_metrics(totals))
     end
 
-    # meta_campaign_id => spend (BigDecimal) within the period's calendar days.
-    def campaign_spend
-      @campaign_spend ||= MetaAds::InsightDaily
-                          .where(date: period_days.first..period_days.last)
-                          .where.not(meta_campaign_id: nil)
-                          .group(:meta_campaign_id)
-                          .sum(:spend)
+    # --- Paid media (Meta insights) -----------------------------------------------
+
+    def paid_media_excluded?
+      (source_filter.present? && source_filter != SOURCE_LABELS['meta_ads']) ||
+        (campaign_filter.present? && !campaign_filter.start_with?('meta:'))
     end
 
-    def meta_campaign_names
-      @meta_campaign_names ||= MetaAds::Campaign.where(meta_id: campaign_spend.keys).pluck(:meta_id, :name).to_h
+    def media_scope
+      return MetaAds::InsightDaily.none if paid_media_excluded?
+
+      scope = MetaAds::InsightDaily.where(date: period_days.first..period_days.last).where.not(meta_campaign_id: nil)
+      campaign_filter ? scope.where(meta_campaign_id: campaign_filter.delete_prefix('meta:')) : scope
     end
 
-    def percent(part, whole)
+    def media_sums
+      MEDIA_COLUMNS.map { |column| Arel.sql("SUM(meta_ad_insights_daily.#{column})") }
+    end
+
+    def empty_media
+      MEDIA_COLUMNS.index_with { 0 }
+    end
+
+    # meta_campaign_id => { spend:, impressions:, link_clicks:, conversations:, meta_leads: } in the period.
+    def campaign_media
+      @campaign_media ||= media_scope.group(:meta_campaign_id).pluck(:meta_campaign_id, *media_sums)
+                                     .to_h { |meta_id, *values| [meta_id, MEDIA_COLUMNS.zip(values.map { |v| v || 0 }).to_h] }
+    end
+
+    # meta_id => { name:, status: } for campaigns with delivery in the period.
+    def meta_campaigns
+      @meta_campaigns ||= MetaAds::Campaign.where(meta_id: campaign_media.keys)
+                                           .pluck(:meta_id, :name, :effective_status)
+                                           .to_h { |meta_id, name, status| [meta_id, { name: name, status: status }] }
+    end
+
+    def ads_history_from
+      MetaAds::Integration.current&.history_synced_from
+    end
+
+    # --- Filter options -------------------------------------------------------------
+
+    # Sources and campaigns of the period, regardless of the source/campaign filters,
+    # so the user can always switch to another option.
+    def filter_options
+      attributions = period_lead_ids.map { |id| attribution_for(id) }
+      campaigns = attributions.to_h { |a| [a[:campaign_key], { key: a[:campaign_key], name: a[:campaign_name], source: a[:source] }] }
+      meta_options = delivered_campaign_options
+      sources = attributions.pluck(:source).uniq
+      sources |= [SOURCE_LABELS['meta_ads']] if meta_options.any?
+
+      { sources: sources.sort, campaigns: meta_options.merge(campaigns).values.sort_by { |c| c[:name].downcase } }
+    end
+
+    # Meta campaigns with delivery in the period (any filter), as campaign options.
+    def delivered_campaign_options
+      ids = MetaAds::InsightDaily.where(date: period_days.first..period_days.last).where.not(meta_campaign_id: nil)
+                                 .distinct.pluck(:meta_campaign_id)
+      names = MetaAds::Campaign.where(meta_id: ids).pluck(:meta_id, :name).to_h
+      ids.to_h do |id|
+        ["meta:#{id}", { key: "meta:#{id}", name: names[id].presence || "Campanha #{id}", source: SOURCE_LABELS['meta_ads'] }]
+      end
+    end
+
+    def percent(part, whole, precision: 1)
       return nil if whole.to_f.zero?
 
-      ((part.to_f / whole) * 100).round(1)
+      ((part.to_f / whole) * 100).round(precision)
     end
 
     def ratio(numerator, denominator, precision: 2)

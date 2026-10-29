@@ -30,7 +30,7 @@ class MetaAds::Integration
       'connection_status' => STATUS_CONNECTED,
       'last_error' => nil,
       # A different ad account starts over with a full history import.
-      **(account_changed ? { 'last_synced_at' => nil } : {})
+      **(account_changed ? { 'last_synced_at' => nil, 'history_synced_from' => nil } : {})
     )
     integration
   end
@@ -102,8 +102,22 @@ class MetaAds::Integration
       last_error: s[:last_error],
       sync_in_progress: MetaAds::SyncLock.locked?,
       counts: s[:counts] || { 'campaigns' => 0, 'adsets' => 0, 'ads' => 0 },
+      history_synced_from: history_synced_from,
+      history_complete: history_complete?,
       graph_api_version: MetaAds::GraphClient.new(access_token: nil).version
     }
+  end
+
+  # Oldest day whose insights are stored with the current fields, or nil.
+  def history_synced_from
+    return if settings[:history_version].to_i != MetaAds::SyncService::HISTORY_VERSION
+
+    settings[:history_synced_from].presence
+  end
+
+  def history_complete?
+    from = history_synced_from
+    from.present? && Date.iso8601(from) <= Date.current - MetaAds::SyncService::HISTORY_DAYS.days
   end
 
   # Payload for the integration page when no hook exists yet.

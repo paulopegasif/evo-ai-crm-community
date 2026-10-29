@@ -5,10 +5,14 @@
 # Table name: meta_ad_insights_daily
 #
 #  id               :uuid             not null, primary key
+#  actions          :jsonb            not null
 #  clicks           :bigint           default(0), not null
 #  currency         :string
 #  date             :date             not null
+#  conversations    :bigint           default(0), not null
 #  impressions      :bigint           default(0), not null
+#  link_clicks      :bigint           default(0), not null
+#  meta_leads       :bigint           default(0), not null
 #  reach            :bigint           default(0), not null
 #  spend            :decimal(14, 2)   default(0.0), not null
 #  created_at       :datetime         not null

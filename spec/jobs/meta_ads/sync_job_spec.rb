@@ -20,7 +20,10 @@ RSpec.describe MetaAds::SyncJob do
   end
   let(:insights) do
     [{ ad_id: '8001', campaign_id: '6001', spend: '120.50', impressions: '10000', reach: '8000', clicks: '300',
-       date_start: (today - 1).iso8601 },
+       date_start: (today - 1).iso8601,
+       actions: [{ action_type: 'link_click', value: '210' },
+                 { action_type: 'onsite_conversion.messaging_conversation_started_7d', value: '42' },
+                 { action_type: 'onsite_conversion.lead_grouped', value: '3' }] },
      { ad_id: '8002', campaign_id: '6001', spend: '79.50', impressions: '5000', reach: '4000', clicks: '150',
        date_start: (today - 1).iso8601 }]
   end
@@ -71,19 +74,67 @@ RSpec.describe MetaAds::SyncJob do
     expect(integration.settings['counts']).to eq('campaigns' => 2, 'adsets' => 1, 'ads' => 2)
   end
 
-  it 'imports 90 days of history on the first sync and 7 days afterwards' do
+  def insight_ranges
+    WebMock::RequestRegistry.instance.requested_signatures.hash.keys
+                            .select { |sig| sig.uri.path.end_with?('/insights') }
+                            .map { |sig| JSON.parse(sig.uri.query_values['time_range']) }
+                            .sort_by { |r| r['since'] }
+  end
+
+  it 'imports 90 days of history on the first sync and 7 days afterwards, plus one older block' do
     described_class.perform_now
-    first_ranges = WebMock::RequestRegistry.instance.requested_signatures.hash.keys
-                                           .select { |sig| sig.uri.path.end_with?('/insights') }
-                                           .map { |sig| JSON.parse(sig.uri.query_values['time_range']) }
-    expect(first_ranges.map { |r| r['since'] }.min).to eq((today - 90).iso8601)
+    expect(insight_ranges.first['since']).to eq((today - 180).iso8601)
+    expect(integration.settings['history_synced_from']).to eq((today - 180).iso8601)
 
     WebMock::RequestRegistry.instance.reset!
     described_class.perform_now
-    ranges = WebMock::RequestRegistry.instance.requested_signatures.hash.keys
-                                     .select { |sig| sig.uri.path.end_with?('/insights') }
-                                     .map { |sig| JSON.parse(sig.uri.query_values['time_range']) }
-    expect(ranges).to eq([{ 'since' => (today - 7).iso8601, 'until' => today.iso8601 }])
+    history = insight_ranges[0...-1]
+    expect([history.first['since'], history.last['until']]).to eq([(today - 270).iso8601, (today - 181).iso8601])
+    expect(insight_ranges.last).to eq('since' => (today - 7).iso8601, 'until' => today.iso8601)
+  end
+
+  it 'stores the results Meta reports per ad and day' do
+    described_class.perform_now
+
+    expect(MetaAds::InsightDaily.find_by(meta_ad_id: '8001')).to have_attributes(link_clicks: 210, conversations: 42,
+                                                                                 meta_leads: 3)
+    expect(MetaAds::InsightDaily.find_by(meta_ad_id: '8001').actions.size).to eq(3)
+    expect(MetaAds::InsightDaily.find_by(meta_ad_id: '8002')).to have_attributes(link_clicks: 0, conversations: 0,
+                                                                                 meta_leads: 0)
+  end
+
+  it 'imports again the days stored before results were synced' do
+    integration.write!('last_synced_at' => 1.hour.ago.iso8601, 'history_synced_from' => (today - 90).iso8601)
+
+    described_class.perform_now
+
+    history = insight_ranges[0...-1]
+    expect([history.first['since'], history.last['until']]).to eq([(today - 97).iso8601, (today - 8).iso8601])
+    expect(integration.settings).to include('history_synced_from' => (today - 97).iso8601, 'history_version' => 2)
+  end
+
+  it 'stops filling history after 24 months' do
+    integration.write!('last_synced_at' => 1.hour.ago.iso8601, 'history_version' => 2,
+                       'history_synced_from' => (today - 750).iso8601)
+
+    described_class.perform_now
+
+    expect(insight_ranges).to eq([{ 'since' => (today - 7).iso8601, 'until' => today.iso8601 }])
+    expect(integration.as_json[:history_complete]).to be(true)
+  end
+
+  it 'keeps the history cursor when Meta rate limits an older block' do
+    integration.write!('last_synced_at' => 1.hour.ago.iso8601, 'history_version' => 2,
+                       'history_synced_from' => (today - 300).iso8601)
+    stub_request(:get, "#{graph}/#{account}/insights")
+      .with(query: hash_including('time_range' => { since: (today - 390).iso8601, until: (today - 361).iso8601 }.to_json))
+      .to_return(status: 400, body: { error: { message: 'Too many calls', code: 17 } }.to_json,
+                 headers: { 'Content-Type' => 'application/json' })
+
+    described_class.perform_now
+
+    expect(integration.settings['history_synced_from']).to eq((today - 300).iso8601)
+    expect(integration.connection_status).to eq('connected')
   end
 
   it 'updates renamed objects and revised spend without duplicating rows' do

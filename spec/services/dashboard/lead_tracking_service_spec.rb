@@ -175,5 +175,72 @@ RSpec.describe Dashboard::LeadTrackingService do
         expect(data[:period][:timezone]).to eq('America/Sao_Paulo')
       end
     end
+
+    it 'groups long periods by week and month' do
+      travel_to Time.utc(2026, 10, 20, 12) do
+        MetaAds::InsightDaily.create!(meta_ad_id: '8001', meta_campaign_id: '6001', date: Date.new(2026, 10, 13), spend: 10)
+        MetaAds::InsightDaily.create!(meta_ad_id: '8001', meta_campaign_id: '6001', date: Date.new(2026, 10, 15), spend: 5)
+        year = { since: Time.utc(2026, 1, 1, 12).to_i.to_s, until: Time.current.to_i.to_s }
+
+        weekly = described_class.new(params: year).call
+        week = weekly[:timeline].find { |p| p[:start_date] == '2026-10-12' }
+        expect(weekly[:period][:granularity]).to eq('week')
+        expect(week).to include(label: 'sem. 12/10', end_date: '2026-10-18', spend: 15.0)
+        expect(weekly[:timeline].first[:start_date]).to eq('2026-01-01')
+
+        monthly = described_class.new(params: year.merge(granularity: 'month')).call
+        expect(monthly[:timeline].size).to eq(10)
+        expect(monthly[:timeline].last).to include(label: 'out/26', start_date: '2026-10-01', end_date: '2026-10-20')
+      end
+    end
+  end
+
+  describe 'paid media' do
+    before do
+      MetaAds::Campaign.create!(meta_id: '6002', ad_account_id: 'act_1', name: 'Harmonização', effective_status: 'PAUSED')
+      MetaAds::Ad.create!(meta_id: '8003', meta_campaign_id: '6002', name: 'Reels')
+      MetaAds::InsightDaily.create!(meta_ad_id: '8001', meta_campaign_id: '6001', date: 2.days.ago.to_date, spend: 300,
+                                    impressions: 20_000, link_clicks: 400, conversations: 100, meta_leads: 0)
+      MetaAds::InsightDaily.create!(meta_ad_id: '8003', meta_campaign_id: '6002', date: 1.day.ago.to_date, spend: 200,
+                                    impressions: 5_000, link_clicks: 0, conversations: 25, meta_leads: 4)
+    end
+
+    it 'reports delivery, results and cost per result' do
+      expect(result[:kpis]).to include(
+        ad_spend: 500.0, impressions: 25_000, link_clicks: 400, ctr: 1.6, cpc: 1.25, cpm: 20.0,
+        conversations: 125, cost_per_conversation: 4.0, meta_leads: 4, cost_per_meta_lead: 125.0
+      )
+      expect(campaign('Harmonização')).to include(status: 'PAUSED', spend: 200.0, cpc: nil, ctr: 0.0,
+                                                  conversations: 25, cost_per_conversation: 8.0)
+    end
+
+    it 'narrows leads and media to one Meta campaign' do
+      2.times { lead({ 'utm_source' => 'meta_ads', 'ad_id' => '8001' }) }
+      lead({ 'utm_source' => 'meta_ads', 'ad_id' => '8003' })
+      lead
+
+      data = described_class.new(params: params.merge(campaign_key: 'meta:6001')).call
+
+      expect(data[:kpis]).to include(total_leads: 2, ad_spend: 300.0, conversations: 100, has_ad_spend: true)
+      expect(data[:campaigns].map { |c| c[:name] }).to eq(['Botox Outubro'])
+      expect(data[:filter_options][:campaigns].map { |c| c[:name] }).to include('Botox Outubro', 'Harmonização', 'Sem campanha')
+    end
+
+    it 'hides paid media for a source outside Meta' do
+      lead({ 'utm_source' => 'google' })
+      lead({ 'utm_source' => 'meta_ads', 'ad_id' => '8001' })
+
+      data = described_class.new(params: params.merge(source: 'google')).call
+
+      expect(data[:kpis]).to include(total_leads: 1, ad_spend: 0.0, conversations: 0, cost_per_conversation: nil,
+                                     has_ad_spend: false)
+      expect(data[:filter_options][:sources]).to contain_exactly('google', 'Meta Ads')
+    end
+
+    it 'adds the results to each timeline point' do
+      day = result[:timeline].find { |p| p[:date] == 2.days.ago.to_date.iso8601 }
+
+      expect(day).to include(spend: 300.0, conversations: 100, link_clicks: 400, impressions: 20_000)
+    end
   end
 end
