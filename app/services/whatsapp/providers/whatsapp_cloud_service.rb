@@ -341,27 +341,25 @@ module Whatsapp
         handle_update_response(response, template_id)
       end
 
-      def delete_template(template_id)
-        Rails.logger.info '=== DELETE WHATSAPP TEMPLATE START ==='
-        Rails.logger.info "WhatsApp Cloud delete_template template_id: #{template_id}"
-
-        template = whatsapp_channel.message_templates.find { |t| t['id'] == template_id }
-        if template.blank?
-          Rails.logger.warn "Template not found with ID: #{template_id}, considering as already deleted"
+      # Deletes the template on Meta. The caller removes the local record —
+      # sync_templates only upserts, so it never drops templates gone from Meta.
+      # With hsm_id Meta deletes only this language; by name alone it would
+      # delete every language of the template.
+      # ref https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates#deleting-templates
+      def delete_template(template)
+        external_id = template.metadata.to_h['external_id']
+        if external_id.blank?
+          Rails.logger.info "WhatsApp Cloud delete_template: #{template.name} was never synced to Meta, skipping"
           return true
         end
 
-        Rails.logger.info "Found template to delete: #{template['name']} (#{template['language']})"
-        Rails.logger.info "WhatsApp Cloud delete_template request URL: #{business_account_path}/message_templates"
-        Rails.logger.info "WhatsApp Cloud delete_template request headers: #{api_headers.inspect}"
-
-        request_body = { name: template['name'] }
-        Rails.logger.info "WhatsApp Cloud delete_template request body: #{request_body.to_json}"
+        query = { name: template.name, hsm_id: external_id }
+        Rails.logger.info "WhatsApp Cloud delete_template request: #{business_account_path}/message_templates #{query.to_json}"
 
         response = HTTParty.delete(
           "#{business_account_path}/message_templates",
           headers: api_headers,
-          body: request_body.to_json
+          query: query
         )
 
         handle_delete_response(response)
@@ -611,9 +609,6 @@ module Whatsapp
           raise StandardError, error_details
         end
 
-        Rails.logger.info 'Syncing templates after delete...'
-        sync_templates
-        Rails.logger.info '=== DELETE WHATSAPP TEMPLATE END ==='
         true
       end
 

@@ -94,4 +94,37 @@ RSpec.describe Channel::Whatsapp, type: :model do
       channel.mark_connected!
     end
   end
+
+  describe '#delete_message_template' do
+    let(:template) { instance_double(MessageTemplate, destroy!: true) }
+    let(:provider_service) { instance_double(Whatsapp::Providers::WhatsappCloudService, delete_template: true) }
+
+    def channel_with(provider)
+      channel = described_class.new(provider: provider)
+      allow(channel).to receive_messages(message_templates: class_double(MessageTemplate, find: template),
+                                         provider_service: provider_service)
+      channel
+    end
+
+    it 'deletes the template on Meta before removing it locally for Cloud API channels' do
+      channel_with('whatsapp_cloud').delete_message_template('tpl-id')
+
+      expect(provider_service).to have_received(:delete_template).with(template).ordered
+      expect(template).to have_received(:destroy!).ordered
+    end
+
+    it 'keeps the local template when Meta rejects the deletion' do
+      allow(provider_service).to receive(:delete_template).and_raise(StandardError, 'Meta error')
+
+      expect { channel_with('whatsapp_cloud').delete_message_template('tpl-id') }.to raise_error(StandardError, 'Meta error')
+      expect(template).not_to have_received(:destroy!)
+    end
+
+    it 'only removes the local record for other providers' do
+      channel_with('evolution').delete_message_template('tpl-id')
+
+      expect(provider_service).not_to have_received(:delete_template)
+      expect(template).to have_received(:destroy!)
+    end
+  end
 end
