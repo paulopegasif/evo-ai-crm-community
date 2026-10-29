@@ -107,6 +107,14 @@ class Channel::Whatsapp < ApplicationRecord
     # This method is kept for backward compatibility but does nothing
   end
 
+  # Cloud API templates live on Meta: delete there first so a failed Meta call
+  # keeps the local record instead of leaving an orphan on the WABA.
+  def delete_message_template(template_id)
+    template = message_templates.find(template_id)
+    provider_service.delete_template(template) if provider == 'whatsapp_cloud'
+    template.destroy!
+  end
+
   def update_provider_connection!(provider_connection)
     assign_attributes(provider_connection: provider_connection)
     # NOTE: Skip `validate_provider_config?` check
