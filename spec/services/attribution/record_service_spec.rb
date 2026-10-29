@@ -86,4 +86,38 @@ RSpec.describe Attribution::RecordService do
       expect(attrs.dig('last_touch', 'utm_source')).to eq('google')
     end
   end
+
+  describe 'external referral integration (:external_referral)' do
+    it 'stores first-touch referral with external_referral attribution channel' do
+      attrs = record(referral_a, source: :external_referral)
+
+      expect(attrs).to include(
+        'utm_source' => 'meta_ads',
+        'utm_medium' => 'paid_social',
+        'ad_id' => '120200000000001',
+        'ad_source_type' => 'ad',
+        'ad_source_url' => 'https://fb.me/abc',
+        'ad_headline' => 'Botox com 20% off',
+        'ctwa_clid' => 'ARAkLkA8rmlFeiCktEJQ',
+        'attribution_channel' => 'external_referral'
+      )
+      expect(attrs['attributed_at']).to be_present
+      expect(attrs.dig('last_touch', 'attribution_channel')).to eq('external_referral')
+      expect(attrs.dig('last_touch', 'ad_id')).to eq('120200000000001')
+    end
+
+    it 'keeps first-touch and updates last-touch on subsequent external referral' do
+      record(referral_a, source: :external_referral)
+      attrs = record(referral_b, source: :external_referral)
+
+      expect(attrs['ad_id']).to eq('120200000000001')
+      expect(attrs['attribution_channel']).to eq('external_referral')
+      expect(attrs.dig('last_touch', 'ad_id')).to eq('120200000000002')
+    end
+
+    it 'ignores referral without source_id nor ctwa_clid' do
+      expect(described_class.new(contact: contact, touch: { headline: 'x' }, source: :external_referral).perform).to be(false)
+      expect(contact.reload.additional_attributes).to eq({})
+    end
+  end
 end

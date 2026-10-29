@@ -718,6 +718,10 @@ Rails.application.routes.draw do
 
         resources :leads, only: [:create]
 
+        namespace :integrations do
+          resources :external_leads, only: [:create]
+        end
+
         # Anonymous lead-capture forms (B14.01): resolved by public slug, no API key.
         get  'forms/:slug',             to: 'forms#show'
         post 'forms/:slug/submissions', to: 'forms#create'

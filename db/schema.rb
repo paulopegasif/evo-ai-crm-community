@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_29_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -615,6 +615,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_29_120000) do
     t.index ["granted_at"], name: "index_data_privacy_consents_on_granted_at"
     t.index ["user_id", "consent_type"], name: "index_data_privacy_consents_on_user_id_and_consent_type", unique: true
     t.index ["user_id"], name: "index_data_privacy_consents_on_user_id"
+  end
+
+  create_table "external_links", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "source", limit: 100, null: false
+    t.string "external_type", limit: 100, null: false
+    t.string "external_id", limit: 255, null: false
+    t.string "record_type", limit: 100, null: false
+    t.uuid "record_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["record_type", "record_id"], name: "index_external_links_on_record_type_and_record_id"
+    t.index ["source", "external_type", "external_id"], name: "index_external_links_on_source_and_type_and_external_id", unique: true
   end
 
   create_table "facebook_comment_moderations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
