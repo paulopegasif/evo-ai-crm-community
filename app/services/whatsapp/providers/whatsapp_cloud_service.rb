@@ -278,7 +278,7 @@ module Whatsapp
         Rails.logger.info "WhatsApp Cloud create_template request headers: #{api_headers.inspect}"
 
         # Processar componentes para adicionar examples quando necessário
-        processed_components = process_template_components(template_data['components'])
+        processed_components = process_template_components(template_data['components'], template_data['variables'])
 
         request_body = {
           name: template_data['name'],
@@ -543,7 +543,7 @@ module Whatsapp
 
         # Sempre incluir components se fornecidos
         if template_data['components'].present?
-          processed_components = process_template_components(template_data['components'])
+          processed_components = process_template_components(template_data['components'], template_data['variables'])
           request_body[:components] = processed_components
         end
 
@@ -617,7 +617,7 @@ module Whatsapp
         true
       end
 
-      def process_template_components(components)
+      def process_template_components(components, variables = nil)
         return [] if components.blank?
 
         components.map do |component|
@@ -628,15 +628,14 @@ module Whatsapp
             # Se o texto do header contém variáveis {{1}}, adicionar example
             if component['format'] == 'TEXT' && component['text'].present? && component['text'].include?('{{')
               processed_component['example'] = {
-                'header_text' => [component['text'].gsub(/\{\{\d+\}\}/, 'Example')]
+                'header_text' => template_variable_examples(component['text'], variables)
               }
             end
           when 'BODY'
             if component['text'].present? && component['text'].include?('{{')
-              # Se o texto do body contém variáveis, adicionar example
-              example_text = component['text'].gsub(/\{\{\d+\}\}/, 'Example')
+              # Meta expects one example value per body variable, in order
               processed_component['example'] = {
-                'body_text' => [[example_text]]
+                'body_text' => [template_variable_examples(component['text'], variables)]
               }
             end
           when 'BUTTONS'
@@ -649,6 +648,19 @@ module Whatsapp
           end
 
           processed_component
+        end
+      end
+
+      # One example per distinct {{n}} in the text, taken from the form's
+      # variables when present, otherwise a generic placeholder.
+      def template_variable_examples(text, variables)
+        examples = Array(variables).each_with_object({}) do |variable, acc|
+          variable = variable.to_h.stringify_keys
+          acc[variable['name'].to_s] = variable['example'].to_s if variable['example'].present?
+        end
+
+        text.scan(/\{\{\s*(\w+)\s*\}\}/).flatten.uniq.map do |name|
+          examples[name] || "Exemplo #{name}"
         end
       end
 
