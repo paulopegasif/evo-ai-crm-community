@@ -68,6 +68,13 @@ class Appointment < ApplicationRecord
   scope :upcoming, -> { where('start_time >= ?', Time.current).order(start_time: :asc) }
   scope :ordered, -> { order(start_time: :asc) }
 
+  # Determina se o agendamento deve sincronizar com o Google Calendar.
+  # Agendamentos originados de integrações externas (com custom_attributes['source'])
+  # não devem sincronizar com o Google Calendar para evitar poluição da agenda.
+  def sync_google_calendar?
+    custom_attributes['source'].blank?
+  end
+
   # Gera URL para o usuário/cliente adicionar ao Google Calendar em 1 clique
   def google_calendar_url
     start_utc = start_time.utc.strftime('%Y%m%dT%H%M%SZ')

@@ -47,7 +47,7 @@ class Attribution::RecordService
   private
 
   def normalized_touch
-    raw = @source == :whatsapp_referral ? referral_touch : utm_touch
+    raw = %i[whatsapp_referral external_referral].include?(@source) ? referral_touch : utm_touch
     raw.transform_values { |value| value.to_s.strip.first(MAX_VALUE_LENGTH) }
        .select { |key, value| TOUCH_KEYS.include?(key) && value.present? }
   end
