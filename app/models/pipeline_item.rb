@@ -121,11 +121,14 @@ class PipelineItem < ApplicationRecord
   end
 
   def services_total_value
-    return 0 unless custom_fields&.dig('services').is_a?(Array)
+    services_sum = if custom_fields&.dig('services').is_a?(Array)
+                     custom_fields['services'].sum { |service| service['value'].to_f }
+                   else
+                     0.0
+                   end
+    return services_sum if services_sum.positive?
 
-    custom_fields['services'].sum do |service|
-      service['value'].to_f
-    end
+    custom_fields&.dig('value').to_f
   end
 
   def pending_tasks_count

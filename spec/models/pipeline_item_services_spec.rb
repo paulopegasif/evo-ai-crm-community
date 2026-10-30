@@ -158,7 +158,7 @@ RSpec.describe PipelineItem, 'services catalog integration', type: :model do
       expect(item.services_total_value).to eq(300.75)
     end
 
-    it 'returns 0 when no services' do
+    it 'returns 0 when no services and no value' do
       item = PipelineItem.create!(
         pipeline: pipeline,
         pipeline_stage: stage,
@@ -167,6 +167,33 @@ RSpec.describe PipelineItem, 'services catalog integration', type: :model do
       )
 
       expect(item.services_total_value).to eq(0)
+    end
+
+    it 'falls back to custom_fields value when services is absent' do
+      item = PipelineItem.create!(
+        pipeline: pipeline,
+        pipeline_stage: stage,
+        contact: contact,
+        custom_fields: { 'value' => 1500.50 }
+      )
+
+      expect(item.services_total_value).to eq(1500.50)
+    end
+
+    it 'prefers positive services total over custom_fields value' do
+      item = PipelineItem.create!(
+        pipeline: pipeline,
+        pipeline_stage: stage,
+        contact: contact,
+        custom_fields: {
+          'value' => 1000.0,
+          'services' => [
+            { 'name' => 'Procedimento Especial', 'value' => '2500.00' }
+          ]
+        }
+      )
+
+      expect(item.services_total_value).to eq(2500.0)
     end
   end
 
