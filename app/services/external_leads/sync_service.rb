@@ -203,7 +203,10 @@ module ExternalLeads
 
       if @pipeline_item.nil?
         custom_fields = { 'lead_source' => @source }
-        custom_fields['value'] = deal_value if deal_value.present?
+        if deal_value.present?
+          custom_fields['value'] = deal_value
+          custom_fields['services'] = [{ 'name' => 'Procedimento', 'value' => deal_value.to_s }]
+        end
 
         @pipeline_item = @pipeline.pipeline_items.create!(
           contact: @contact,
@@ -237,8 +240,9 @@ module ExternalLeads
 
         if deal_value.present?
           cf = (@pipeline_item.custom_fields || {}).deep_dup
-          if cf['value'] != deal_value
+          if cf['value'] != deal_value || cf['services'].blank?
             cf['value'] = deal_value
+            cf['services'] = [{ 'name' => 'Procedimento', 'value' => deal_value.to_s }] if cf['services'].blank?
             @pipeline_item.custom_fields = cf
             changes = true
           end
@@ -307,6 +311,16 @@ module ExternalLeads
 
           if apt.key?(:price) && appointment.price != price
             appointment.price = price
+            changes = true
+          end
+
+          if apt.key?(:category) && appointment.category != category
+            appointment.category = category
+            changes = true
+          end
+
+          if apt.key?(:title) && appointment.title != title
+            appointment.title = title
             changes = true
           end
 

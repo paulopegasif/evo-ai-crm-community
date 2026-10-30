@@ -119,7 +119,14 @@ module Dashboard
     end
 
     def qualified_ids
-      @qualified_ids ||= scheduled_ids | PipelineItem.where(contact_id: cohort_ids).pluck(:contact_id).to_set
+      @qualified_ids ||= begin
+        advanced = PipelineItem.joins(:pipeline_stage)
+                               .where(contact_id: cohort_ids)
+                               .where('pipeline_stages.position > 1')
+                               .where.not(pipeline_stages: { stage_type: PipelineStage.stage_types[:cancelled] })
+                               .pluck(:contact_id)
+        scheduled_ids | advanced.to_set
+      end
     end
 
     # Attended and either paid for the procedure or closed in a completed pipeline stage.
@@ -405,6 +412,7 @@ module Dashboard
     def campaign_metrics(row)
       media = row[:meta_campaign_id] ? campaign_media.fetch(row[:meta_campaign_id], empty_media) : nil
       spend = media && media[:spend].to_f.round(2)
+      conversations = media && media[:conversations].to_i
       {
         status: row[:meta_campaign_id] ? meta_campaigns.dig(row[:meta_campaign_id], :status) : nil,
         revenue: row[:revenue].round(2),
@@ -412,7 +420,8 @@ module Dashboard
         spend: spend,
         cpl: ratio(spend, row[:leads]),
         cac: ratio(spend, row[:won]),
-        roas: ratio(spend && row[:revenue], spend)
+        roas: ratio(spend && row[:revenue], spend),
+        lead_capture_rate: percent(row[:leads], conversations)
       }.merge(media_metrics(media))
     end
 
@@ -443,6 +452,7 @@ module Dashboard
       ad_ids = cohort_ids.select { |id| attribution_for(id)[:from_ad] }
       ad_won = ad_ids.count { |id| won_ids.include?(id) }
       ad_revenue = ad_ids.sum { |id| cohort_revenue[id] }.round(2)
+      conversations = totals[:conversations].to_i
 
       {
         ad_spend: spend.round(2),
@@ -452,6 +462,7 @@ module Dashboard
         avg_cpl: ratio(spend, ad_ids.size),
         ad_cac: ratio(spend, ad_won),
         roas: ratio(ad_revenue, spend),
+        lead_capture_rate: percent(ad_ids.size, conversations),
         has_ad_spend: !paid_media_excluded? && (MetaAds::Integration.current.present? || spend.positive?)
       }.merge(media_metrics(totals))
     end

@@ -125,6 +125,35 @@ RSpec.describe Dashboard::LeadTrackingService do
       expect(result[:kpis]).to include(scheduling_rate: nil, conversion_rate: nil)
       expect(result[:funnel].map { |s| s[:percentage] }).to all(be_nil)
     end
+
+    it 'qualifies only leads that advanced past stage 1 (non-cancelled) or have scheduled appointments' do
+      pipeline = Pipeline.create!(name: 'Comercial', created_by: professional)
+      stage_entry = PipelineStage.create!(pipeline: pipeline, name: 'Novos Leads', position: 1, stage_type: :active)
+      stage_triage = PipelineStage.create!(pipeline: pipeline, name: 'Triagem', position: 2, stage_type: :active)
+      stage_lost = PipelineStage.create!(pipeline: pipeline, name: 'Perdido', position: 7, stage_type: :cancelled)
+
+      l1 = lead # entry stage, no appointment -> not qualified
+      PipelineItem.create!(pipeline: pipeline, pipeline_stage: stage_entry, contact: l1)
+
+      l2 = lead # lost stage, no appointment -> not qualified
+      PipelineItem.create!(pipeline: pipeline, pipeline_stage: stage_lost, contact: l2)
+
+      l3 = lead # triage stage -> qualified
+      PipelineItem.create!(pipeline: pipeline, pipeline_stage: stage_triage, contact: l3)
+
+      l4 = lead # appointment -> qualified
+      appointment(l4, 'scheduled')
+
+      l5 = lead # entry stage + appointment -> qualified
+      PipelineItem.create!(pipeline: pipeline, pipeline_stage: stage_entry, contact: l5)
+      appointment(l5, 'scheduled')
+
+      expect(result[:kpis]).to include(
+        total_leads: 5,
+        total_qualified: 3,
+        total_scheduled: 2
+      )
+    end
   end
 
   describe 'period agenda' do
@@ -221,8 +250,9 @@ RSpec.describe Dashboard::LeadTrackingService do
 
       data = described_class.new(params: params.merge(campaign_key: 'meta:6001')).call
 
-      expect(data[:kpis]).to include(total_leads: 2, ad_spend: 300.0, conversations: 100, has_ad_spend: true)
+      expect(data[:kpis]).to include(total_leads: 2, ad_spend: 300.0, conversations: 100, lead_capture_rate: 2.0, has_ad_spend: true)
       expect(data[:campaigns].map { |c| c[:name] }).to eq(['Botox Outubro'])
+      expect(data[:campaigns].first).to include(leads: 2, conversations: 100, lead_capture_rate: 2.0)
       expect(data[:filter_options][:campaigns].map { |c| c[:name] }).to include('Botox Outubro', 'Harmonização', 'Sem campanha')
     end
 
