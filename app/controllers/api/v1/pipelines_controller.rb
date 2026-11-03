@@ -345,6 +345,10 @@ class Api::V1::PipelinesController < Api::V1::BaseController
         }
       end
 
+      if stage_data[:stage_type].present? || stage_data['stage_type'].present?
+        stage_attrs[:stage_type] = stage_data[:stage_type] || stage_data['stage_type']
+      end
+
       @pipeline.pipeline_stages.create!(stage_attrs)
     end
   end
@@ -353,19 +357,22 @@ class Api::V1::PipelinesController < Api::V1::BaseController
     default_stages = case @pipeline.pipeline_type
                      when 'sales'
                        [
-                         { name: 'Lead', color: '#60A5FA', position: 1 },
-                         { name: 'Qualified', color: '#F59E0B', position: 2 },
-                         { name: 'Proposal', color: '#10B981', position: 3 },
-                         { name: 'Won', color: '#059669', position: 4},
-                         { name: 'Lost', color: '#EF4444', position: 5}
+                         { name: 'Novo Lead', color: '#3B82F6', position: 1, stage_type: :active },
+                         { name: 'Qualificação & Perfil', color: '#F59E0B', position: 2, stage_type: :active },
+                         { name: 'Demonstração / Trial', color: '#8B5CF6', position: 3, stage_type: :active },
+                         { name: 'Proposta & Negociação', color: '#EC4899', position: 4, stage_type: :active },
+                         { name: 'Fechado Ganho (Assinante)', color: '#10B981', position: 5, stage_type: :completed },
+                         { name: 'Perdido / Sem Perfil', color: '#EF4444', position: 6, stage_type: :cancelled },
+                         { name: 'Nutrição (Resend)', color: '#64748B', position: 7, stage_type: :active }
                        ]
                      when 'support'
                        [
-                         { name: 'New', color: '#60A5FA', position: 1 },
-                         { name: 'In Progress', color: '#F59E0B', position: 2 },
-                         { name: 'Waiting', color: '#8B5CF6', position: 3 },
-                         { name: 'Resolved', color: '#059669', position: 4},
-                         { name: 'Closed', color: '#6B7280', position: 5}
+                         { name: 'Novo Chamado', color: '#3B82F6', position: 1, stage_type: :active },
+                         { name: 'Triagem & Diagnóstico', color: '#F59E0B', position: 2, stage_type: :active },
+                         { name: 'Em Atendimento', color: '#8B5CF6', position: 3, stage_type: :active },
+                         { name: 'Aguardando Cliente', color: '#6366F1', position: 4, stage_type: :active },
+                         { name: 'Resolvido', color: '#10B981', position: 5, stage_type: :completed },
+                         { name: 'Risco de Churn', color: '#EF4444', position: 6, stage_type: :active }
                        ]
                      else
                        [

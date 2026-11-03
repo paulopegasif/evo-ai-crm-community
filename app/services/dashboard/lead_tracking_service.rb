@@ -129,21 +129,30 @@ module Dashboard
       end
     end
 
-    # Attended and either paid for the procedure or closed in a completed pipeline stage.
+    # Attended and paid for procedure OR closed in a completed pipeline stage (SaaS won deal).
     def won_ids
       @won_ids ||= begin
         paid = cohort_appointment_rows.filter_map { |id, status, price| id if status == 'attended' && price.to_f.positive? }
         closed = PipelineItem.joins(:pipeline_stage)
                              .where(contact_id: cohort_ids, pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
                              .pluck(:contact_id)
-        attended_ids & (paid.to_set | closed.to_set)
+        (attended_ids & paid.to_set) | closed.to_set
       end
     end
 
-    # contact_id => revenue of the attended appointments of that lead.
+    # contact_id => revenue of the cohort (attended appointments + won pipeline items).
     def cohort_revenue
-      @cohort_revenue ||= cohort_appointment_rows.each_with_object(Hash.new(0.0)) do |(id, status, price), acc|
-        acc[id] += price.to_f if status == 'attended'
+      @cohort_revenue ||= begin
+        acc = Hash.new(0.0)
+        cohort_appointment_rows.each do |(id, status, price)|
+          acc[id] += price.to_f if status == 'attended'
+        end
+        PipelineItem.joins(:pipeline_stage)
+                    .where(contact_id: cohort_ids, pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
+                    .find_each do |item|
+          acc[item.contact_id] += item.services_total_value
+        end
+        acc
       end
     end
 
@@ -163,13 +172,21 @@ module Dashboard
     end
 
     def build_funnel
-      stages = [
-        ['leads', 'Leads', cohort_ids.size],
-        ['qualified', 'Qualificados', qualified_ids.size],
-        ['scheduled', 'Agendaram', scheduled_ids.size],
-        ['attended', 'Compareceram', attended_ids.size],
-        ['won', 'Converteram', won_ids.size]
-      ]
+      stages = if scheduled_ids.any? || attended_ids.any?
+                 [
+                   ['leads', 'Leads', cohort_ids.size],
+                   ['qualified', 'Qualificados', qualified_ids.size],
+                   ['scheduled', 'Agendaram', scheduled_ids.size],
+                   ['attended', 'Compareceram', attended_ids.size],
+                   ['won', 'Converteram', won_ids.size]
+                 ]
+               else
+                 [
+                   ['leads', 'Leads Capturados', cohort_ids.size],
+                   ['qualified', 'Qualificados / Oportunidades', qualified_ids.size],
+                   ['won', 'Assinantes / Vendas', won_ids.size]
+                 ]
+               end
 
       stages.each_with_index.map do |(key, label, count), index|
         {

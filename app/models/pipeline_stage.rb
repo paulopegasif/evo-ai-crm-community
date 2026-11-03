@@ -74,10 +74,10 @@ class PipelineStage < ApplicationRecord
 
   def set_default_custom_fields
     self.custom_fields = {} if custom_fields.blank?
-    # Ensure attributes is always an array
     self.custom_fields['attributes'] ||= []
-    # Normalize: keep only attributes array, remove any other keys
-    self.custom_fields = { 'attributes' => custom_fields['attributes'] }
+    attrs = { 'attributes' => custom_fields['attributes'] }
+    attrs['attribute_definitions'] = custom_fields['attribute_definitions'] if custom_fields['attribute_definitions'].present?
+    self.custom_fields = attrs
   end
 
   def cleanup_removed_attributes_from_items
