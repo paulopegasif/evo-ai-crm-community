@@ -12,7 +12,8 @@
 class LeadOrigin
   SOURCE_LABELS = {
     'meta_ads' => 'Meta Ads', 'instagram' => 'Instagram', 'phone' => 'Telefone',
-    'google' => 'Google', 'referral' => 'Indicação', 'site' => 'Site'
+    'google' => 'Google', 'referral' => 'Indicação', 'site' => 'Site',
+    'facebook' => 'Facebook', 'whatsapp' => 'WhatsApp (orgânico)', 'existing_customer' => 'Cliente existente'
   }.freeze
   UNKNOWN_SOURCE = 'Não informada'
 
