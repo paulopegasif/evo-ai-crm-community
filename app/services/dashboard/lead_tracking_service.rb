@@ -120,7 +120,7 @@ module Dashboard
 
     def qualified_ids
       @qualified_ids ||= begin
-        advanced = PipelineItem.joins(:pipeline_stage)
+        advanced = sales_pipeline_items
                                .where(contact_id: cohort_ids)
                                .where('pipeline_stages.position > 1')
                                .where.not(pipeline_stages: { stage_type: PipelineStage.stage_types[:cancelled] })
@@ -129,13 +129,22 @@ module Dashboard
       end
     end
 
+    # Support pipelines never feed the lead funnel: a ticket moving to "Resolvido"
+    # (completed) or "Triagem" (position > 1) is not a sale or a qualified lead.
+    def sales_pipeline_items
+      PipelineItem.joins(:pipeline_stage, :pipeline).where.not(pipelines: { pipeline_type: 'support' })
+    end
+
+    def won_pipeline_items
+      sales_pipeline_items.where(contact_id: cohort_ids,
+                                 pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
+    end
+
     # Attended and paid for procedure OR closed in a completed pipeline stage (SaaS won deal).
     def won_ids
       @won_ids ||= begin
         paid = cohort_appointment_rows.filter_map { |id, status, price| id if status == 'attended' && price.to_f.positive? }
-        closed = PipelineItem.joins(:pipeline_stage)
-                             .where(contact_id: cohort_ids, pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
-                             .pluck(:contact_id)
+        closed = won_pipeline_items.pluck(:contact_id)
         (attended_ids & paid.to_set) | closed.to_set
       end
     end
@@ -147,9 +156,7 @@ module Dashboard
         cohort_appointment_rows.each do |(id, status, price)|
           acc[id] += price.to_f if status == 'attended'
         end
-        PipelineItem.joins(:pipeline_stage)
-                    .where(contact_id: cohort_ids, pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
-                    .find_each do |item|
+        won_pipeline_items.find_each do |item|
           acc[item.contact_id] += item.services_total_value
         end
         acc

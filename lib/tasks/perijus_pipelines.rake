@@ -3,7 +3,8 @@
 namespace :crm do
   desc 'Configura os Pipelines padrão para o PeriJus SaaS (Vendas e Suporte)'
   task setup_perijus_pipelines: :environment do
-    admin_user = User.where(role: :administrator).first || User.first
+    admin_user = User.joins(:roles).where(roles: { key: Role::ADMIN_ROLE_KEYS }).order(:created_at).first ||
+                 User.order(:created_at).first
 
     unless admin_user
       puts '❌ Nenhum usuário encontrado no banco de dados para vincular os pipelines.'
@@ -86,7 +87,7 @@ namespace :crm do
     sales_pipeline.save!
 
     sales_stages_data = [
-      { name: 'Novo Lead (Captura)', color: '#3B82F6', position: 1, stage_type: :active, description: 'Leads capturados via tráfego pago, outbound B2B ou landing page' },
+      { name: 'Novo Lead', color: '#3B82F6', position: 1, stage_type: :active, description: 'Leads capturados via tráfego pago, outbound B2B ou landing page' },
       { name: 'Qualificação & Perfil', color: '#F59E0B', position: 2, stage_type: :active, description: 'Identificação de perfil (Perito, Assistente ou Advogado) e volume de demandas' },
       { name: 'Demonstração / Trial', color: '#8B5CF6', position: 3, stage_type: :active, description: 'Degustação do PeriJus, envio de tour ou teste prático de geração de laudos' },
       { name: 'Proposta & Negociação', color: '#EC4899', position: 4, stage_type: :active, description: 'Apresentação dos planos (Mensal/Anual), superação de objeções e checkout' },
@@ -169,7 +170,7 @@ namespace :crm do
       { name: 'Em Atendimento', color: '#8B5CF6', position: 3, stage_type: :active, description: 'Equipe ou agente IA atuando diretamente na resolução' },
       { name: 'Aguardando Cliente', color: '#6366F1', position: 4, stage_type: :active, description: 'Orientação enviada, aguardando validação ou retorno do perito' },
       { name: 'Resolvido', color: '#10B981', position: 5, stage_type: :completed, description: 'Problema sanado e confirmado pelo perito judicial' },
-      { name: 'Risco de Churn / Retenção', color: '#EF4444', position: 6, stage_type: :active, description: 'Cliente insatisfeito ou pedindo cancelamento com ação preventiva de retenção' }
+      { name: 'Risco de Churn', color: '#EF4444', position: 6, stage_type: :active, description: 'Cliente insatisfeito ou pedindo cancelamento com ação preventiva de retenção' }
     ]
 
     support_stages_data.each do |s|

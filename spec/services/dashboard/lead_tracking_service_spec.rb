@@ -154,6 +154,30 @@ RSpec.describe Dashboard::LeadTrackingService do
         total_scheduled: 2
       )
     end
+
+    it 'counts deals closed in a sales pipeline as won, with their value as revenue' do
+      sales = Pipeline.create!(name: 'Vendas SaaS', pipeline_type: 'sales', created_by: professional)
+      PipelineStage.create!(pipeline: sales, name: 'Novo Lead', position: 1, stage_type: :active)
+      won = PipelineStage.create!(pipeline: sales, name: 'Fechado Ganho', position: 2, stage_type: :completed)
+
+      subscriber = lead
+      PipelineItem.create!(pipeline: sales, pipeline_stage: won, contact: subscriber, custom_fields: { 'value' => 297 })
+
+      expect(result[:kpis]).to include(total_leads: 1, total_qualified: 1, total_won: 1, cohort_revenue: 297.0)
+      expect(result[:funnel].map { |s| s[:key] }).to eq(%w[leads qualified won])
+    end
+
+    it 'ignores support pipelines for qualification, conversion and revenue' do
+      support = Pipeline.create!(name: 'Suporte', pipeline_type: 'support', created_by: professional)
+      PipelineStage.create!(pipeline: support, name: 'Novo Chamado', position: 1, stage_type: :active)
+      triage = PipelineStage.create!(pipeline: support, name: 'Triagem', position: 2, stage_type: :active)
+      resolved = PipelineStage.create!(pipeline: support, name: 'Resolvido', position: 5, stage_type: :completed)
+
+      PipelineItem.create!(pipeline: support, pipeline_stage: triage, contact: lead)
+      PipelineItem.create!(pipeline: support, pipeline_stage: resolved, contact: lead, custom_fields: { 'value' => 500 })
+
+      expect(result[:kpis]).to include(total_leads: 2, total_qualified: 0, total_won: 0, cohort_revenue: 0.0)
+    end
   end
 
   describe 'period agenda' do
