@@ -31,7 +31,7 @@ class Api::V1::DashboardController < Api::V1::BaseController
   end
 
   def lead_list
-    service = Dashboard::LeadListService.new(params: lead_tracking_params.merge(params.permit(:page, :per_page, :sort, :order)))
+    service = Dashboard::LeadListService.new(params: lead_tracking_params.merge(params.permit(:page, :per_page, :sort, :order, :q, :step)))
     if params[:format] == 'csv'
       send_data service.to_csv, filename: "leads-#{Date.current.iso8601}.csv", type: 'text/csv; charset=utf-8'
     else

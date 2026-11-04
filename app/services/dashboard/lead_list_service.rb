@@ -7,6 +7,13 @@ module Dashboard
   # origin, estimated cost, current stage, first evaluation and revenue.
   class LeadListService
     SORTS = %w[entered_at estimated_cost revenue].freeze
+    # Furthest funnel step a lead reached; `not_scheduled` = never had an evaluation.
+    STEPS = {
+      'not_scheduled' => ->(row) { !row[:scheduled] },
+      'scheduled' => ->(row) { row[:scheduled] && !row[:attended] },
+      'attended' => ->(row) { row[:attended] && !row[:won] },
+      'won' => ->(row) { row[:won] }
+    }.freeze
     PER_PAGE = 50
     MAX_PER_PAGE = 200
     CSV_HEADERS = {
@@ -20,23 +27,48 @@ module Dashboard
     end
 
     def call
-      rows = sorted(all_rows)
+      searched = searched(all_rows)
+      rows = sorted(by_step(searched))
       page = [@params[:page].to_i, 1].max
       per_page = (@params[:per_page].presence || PER_PAGE).to_i.clamp(1, MAX_PER_PAGE)
       {
         leads: rows.slice((page - 1) * per_page, per_page) || [],
-        meta: { page: page, per_page: per_page, total_count: rows.size, total_pages: (rows.size.to_f / per_page).ceil }
+        meta: {
+          page: page, per_page: per_page, total_count: rows.size, total_pages: (rows.size.to_f / per_page).ceil,
+          step_counts: STEPS.transform_values { |match| searched.count(&match) }.merge('all' => searched.size)
+        }
       }
     end
 
     def to_csv
       CSV.generate(col_sep: ';') do |csv|
         csv << CSV_HEADERS.values
-        sorted(all_rows).each { |row| csv << CSV_HEADERS.keys.map { |key| row[key] } }
+        sorted(by_step(searched(all_rows))).each { |row| csv << CSV_HEADERS.keys.map { |key| row[key] } }
       end
     end
 
     private
+
+    # Name, phone or campaign contains the term (accents and case ignored).
+    def searched(rows)
+      term = normalize(@params[:q])
+      return rows if term.blank?
+
+      digits = term.gsub(/\D/, '')
+      rows.select do |row|
+        [row[:name], row[:campaign_name]].any? { |value| normalize(value).include?(term) } ||
+          (digits.length >= 4 && row[:phone_number].to_s.gsub(/\D/, '').include?(digits))
+      end
+    end
+
+    def by_step(rows)
+      match = STEPS[@params[:step].to_s]
+      match ? rows.select(&match) : rows
+    end
+
+    def normalize(value)
+      I18n.transliterate(value.to_s).downcase.strip
+    end
 
     def snapshot
       @snapshot ||= LeadTrackingService.new(params: @params).cohort_snapshot

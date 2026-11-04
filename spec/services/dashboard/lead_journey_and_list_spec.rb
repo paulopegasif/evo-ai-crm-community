@@ -33,6 +33,21 @@ RSpec.describe 'Lead list and journey' do
     expect(data[:leads].last).to include(name: 'Lead Orgânico', estimated_cost: nil)
   end
 
+  it 'filters by search term and funnel step, counting steps over the searched rows' do
+    Appointment.create!(title: 'Avaliação', start_time: 1.day.ago, end_time: 1.day.ago + 1.hour, user: user,
+                        contact: ad_lead, status: 'scheduled')
+
+    by_name = Dashboard::LeadListService.new(params: params.merge(q: 'organico')).call
+    expect(by_name[:leads].map { |r| r[:name] }).to eq(['Lead Orgânico'])
+
+    by_phone = Dashboard::LeadListService.new(params: params.merge(q: '1111')).call
+    expect(by_phone[:leads].map { |r| r[:name] }).to eq(['Lead Anúncio'])
+
+    not_scheduled = Dashboard::LeadListService.new(params: params.merge(step: 'not_scheduled')).call
+    expect(not_scheduled[:leads].map { |r| r[:name] }).to eq(['Lead Orgânico'])
+    expect(not_scheduled[:meta][:step_counts]).to include('all' => 2, 'not_scheduled' => 1, 'scheduled' => 1, 'won' => 0)
+  end
+
   it 'exports the list as CSV' do
     csv = Dashboard::LeadListService.new(params: params).to_csv
     expect(csv.lines.first).to include('Nome;Telefone;Entrada')
