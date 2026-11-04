@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_04_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -160,6 +160,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
     t.jsonb "custom_attributes", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "all_day", default: false, null: false
     t.index ["category"], name: "index_appointments_on_category"
     t.index ["contact_id"], name: "index_appointments_on_contact_id"
     t.index ["custom_attributes"], name: "index_appointments_on_custom_attributes", using: :gin
@@ -629,6 +630,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
     t.index ["source", "external_type", "external_id"], name: "index_external_links_on_source_and_type_and_external_id", unique: true
   end
 
+  create_table "external_unlinked_sales", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "source", limit: 100, null: false
+    t.string "external_id", limit: 255, null: false
+    t.string "customer_name", null: false
+    t.string "customer_phone"
+    t.string "reason", limit: 50, null: false
+    t.string "status", limit: 50, default: "pending", null: false
+    t.decimal "amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "category", limit: 100
+    t.datetime "sold_at"
+    t.jsonb "candidate_contact_ids", default: [], null: false
+    t.jsonb "payload", default: {}, null: false
+    t.uuid "resolved_contact_id"
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sold_at"], name: "index_external_unlinked_sales_on_sold_at"
+    t.index ["source", "external_id"], name: "index_external_unlinked_sales_on_source_and_external_id", unique: true
+    t.index ["status"], name: "index_external_unlinked_sales_on_status"
+  end
+
   create_table "facebook_comment_moderations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "conversation_id", null: false
     t.uuid "message_id", null: false
@@ -1055,6 +1077,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.jsonb "custom_fields", default: {}, null: false
+    t.boolean "counts_as_qualified", default: false, null: false
     t.index ["custom_fields"], name: "index_pipeline_stages_on_custom_fields", using: :gin
     t.index ["pipeline_id", "position"], name: "index_pipeline_stages_on_pipeline_id_and_position", unique: true
     t.index ["pipeline_id"], name: "index_pipeline_stages_on_pipeline_id"

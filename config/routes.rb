@@ -96,6 +96,16 @@ Rails.application.routes.draw do
       resource :dashboard, only: [], controller: 'dashboard' do
         get :customer
         get :leads
+        get 'leads/list', action: :lead_list
+        get 'leads/:contact_id/journey', action: :lead_journey
+      end
+
+      resources :unlinked_sales, only: [:index] do
+        member do
+          post :link
+          post :create_lead
+          post :dismiss
+        end
       end
 
       resources :appointments, controller: 'appointments' do
@@ -720,6 +730,7 @@ Rails.application.routes.draw do
 
         namespace :integrations do
           resources :external_leads, only: [:create]
+          resources :external_conversations, only: [:create]
         end
 
         # Anonymous lead-capture forms (B14.01): resolved by public slug, no API key.

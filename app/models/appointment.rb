@@ -65,6 +65,10 @@ class Appointment < ApplicationRecord
       where('start_time <= ?', end_d)
     end
   }
+  # Past appointments still waiting for an outcome. All-day ones only after their day ends.
+  scope :without_outcome, lambda { |now = Time.current|
+    where(status: %w[scheduled confirmed]).where('(all_day AND end_time < :now) OR (NOT all_day AND start_time < :now)', now: now)
+  }
   scope :upcoming, -> { where('start_time >= ?', Time.current).order(start_time: :asc) }
   scope :ordered, -> { order(start_time: :asc) }
 
@@ -101,10 +105,20 @@ class Appointment < ApplicationRecord
   private
 
   def set_default_end_time
+    return normalize_all_day_bounds if all_day?
+
     if start_time.present? && (end_time.blank? || end_time <= start_time)
       mins = duration_minutes.to_i.positive? ? duration_minutes.to_i : 60
       self.end_time = start_time + mins.minutes
     end
+  end
+
+  # All-day appointments span the whole calendar day of start_time in the account zone.
+  def normalize_all_day_bounds
+    return if start_time.blank?
+
+    self.start_time, self.end_time = AccountTime.day_bounds(start_time.in_time_zone(AccountTime.zone).to_date)
+    self.duration_minutes = 24 * 60
   end
 
   def end_time_after_start_time

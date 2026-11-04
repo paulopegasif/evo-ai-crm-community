@@ -3,10 +3,10 @@
 module AppointmentSerializer
   extend self
 
-  def serialize(appointment)
+  def serialize(appointment, detail: false)
     return nil if appointment.nil?
 
-    {
+    data = {
       id: appointment.id,
       title: appointment.title,
       description: appointment.description,
@@ -16,6 +16,9 @@ module AppointmentSerializer
       start_timestamp: appointment.start_time&.to_i,
       end_timestamp: appointment.end_time&.to_i,
       duration_minutes: appointment.duration_minutes,
+      all_day: appointment.all_day,
+      day: appointment.start_time&.in_time_zone(AccountTime.zone)&.to_date&.iso8601,
+      source: appointment.custom_attributes&.dig('source'),
       status: appointment.status,
       user_id: appointment.user_id,
       user: appointment.user ? {
@@ -43,6 +46,16 @@ module AppointmentSerializer
       custom_attributes: appointment.custom_attributes || {},
       created_at: appointment.created_at.to_i,
       updated_at: appointment.updated_at.to_i
+    }
+    detail ? data.merge(details(appointment)) : data
+  end
+
+  # Extra context for the calendar side panel: card stage and lead origin.
+  def details(appointment)
+    stage = appointment.pipeline_item&.pipeline_stage
+    {
+      pipeline_stage: stage && { id: stage.id, name: stage.name, stage_type: stage.stage_type },
+      lead_origin: LeadOrigin.for(appointment.contact)
     }
   end
 

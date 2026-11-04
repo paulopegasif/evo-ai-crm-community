@@ -33,6 +33,11 @@ class Channel::Api < ApplicationRecord
     'API'
   end
 
+  # Inbox that mirrors conversations from an external CRM: read-only, never sends.
+  def read_only_mirror?
+    additional_attributes.is_a?(Hash) && additional_attributes['read_only_mirror'] == true
+  end
+
   private
 
   def ensure_valid_agent_reply_time_window

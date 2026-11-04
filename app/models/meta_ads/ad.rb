@@ -22,6 +22,9 @@
 #  index_meta_ads_on_meta_id           (meta_id) UNIQUE
 #
 class MetaAds::Ad < ApplicationRecord
+  # Marks ads a lead points to that Meta no longer returns (deleted or another account).
+  UNAVAILABLE = 'UNAVAILABLE'
+
   belongs_to :campaign, class_name: 'MetaAds::Campaign', primary_key: :meta_id, foreign_key: :meta_campaign_id,
                         optional: true, inverse_of: :ads
   belongs_to :adset, class_name: 'MetaAds::Adset', primary_key: :meta_id, foreign_key: :meta_adset_id,

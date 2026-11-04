@@ -309,5 +309,141 @@ RSpec.describe ExternalLeads::SyncService do
       expect(ExternalLink.count).to eq(0)
     end
   end
+
+  describe 'all-day appointments' do
+    it 'stores a date-only appointment on the right calendar day in the account zone' do
+      payload = valid_payload.merge(appointments: [{ external_id: 'deal_101_eval', all_day: true, date: '2026-10-07',
+                                                    status: 'scheduled', professional_email: user.email }])
+      result = described_class.new(payload).perform
+      expect(result[:success]).to be(true)
+
+      appointment = Appointment.last
+      expect(appointment.all_day).to be(true)
+      expect(appointment.start_time.in_time_zone('America/Sao_Paulo').to_date).to eq(Date.new(2026, 10, 7))
+      expect(appointment.start_time.in_time_zone('America/Sao_Paulo').hour).to eq(0)
+      expect(appointment.end_time.in_time_zone('America/Sao_Paulo').to_date).to eq(Date.new(2026, 10, 7))
+    end
+
+    it 'turns an all-day appointment into a timed one when the time becomes known' do
+      first = valid_payload.merge(appointments: [{ external_id: 'deal_101_eval', all_day: true, date: '2026-11-20',
+                                                  status: 'scheduled' }])
+      described_class.new(first).perform
+      timed = valid_payload.merge(appointments: [{ external_id: 'deal_101_eval', start_time: '2026-11-20T14:00:00-03:00',
+                                                  duration_minutes: 45, status: 'scheduled' }])
+      result = described_class.new(timed).perform
+
+      expect(result[:appointments].first[:action]).to eq('updated')
+      appointment = Appointment.last
+      expect(appointment.all_day).to be(false)
+      expect(appointment.start_time).to eq(Time.zone.parse('2026-11-20T14:00:00-03:00'))
+      expect(Appointment.count).to eq(1)
+    end
+
+    it 'rejects a malformed date' do
+      payload = valid_payload.merge(appointments: [{ external_id: 'x', all_day: true, date: '07/10/2026', status: 'scheduled' }])
+      result = described_class.new(payload).perform
+      expect(result[:errors]).to include('appointments[0].date must be YYYY-MM-DD')
+    end
+  end
+
+  describe 'status set in the CRM' do
+    it 'is never moved backwards by the sync' do
+      payload = valid_payload.merge(appointments: [{ external_id: 'deal_101_eval', all_day: true, date: '2026-10-07',
+                                                    status: 'scheduled' }])
+      described_class.new(payload).perform
+      appointment = Appointment.last
+      appointment.update!(status: 'attended', custom_attributes: appointment.custom_attributes.merge('crm_override_status' => 'attended'))
+
+      described_class.new(payload).perform
+      expect(appointment.reload.status).to eq('attended')
+    end
+  end
+
+  describe 'sales' do
+    let!(:lead) { Contact.create!(name: 'Erilana de Lima Silva', phone_number: '+5561999990001') }
+
+    def sale_payload(name:, external_id: 'deal-900', phone: nil)
+      {
+        source: 'bitrix24',
+        external_id: external_id,
+        contact: { name: name, phone_number: phone, external_id: 'c-900', created_at: '2026-10-13T10:00:00-03:00' },
+        deal: { pipeline_id: pipeline.id, stage_id: stage_won.id, value: 4850, kind: 'sale' },
+        appointments: [{ external_id: "#{external_id}_eval", all_day: true, date: '2026-10-02', status: 'attended',
+                         price: 4850 }]
+      }
+    end
+
+    it 'ties a phone-less sale to the lead with the same normalized name' do
+      result = described_class.new(sale_payload(name: 'ERILANA DE LIMA  SILVA ')).perform
+
+      expect(result[:success]).to be(true)
+      expect(result[:contact]).to include(id: lead.id, match: 'name')
+      expect(Appointment.last).to have_attributes(contact_id: lead.id, status: 'attended', price: 4850)
+      expect(lead.reload.name).to eq('Erilana de Lima Silva')
+      expect(Contact.count).to eq(1)
+      expect(ExternalLink.find_by(external_type: 'contact', external_id: 'c-900').record).to eq(lead)
+    end
+
+    it 'matches names regardless of accents' do
+      accented = Contact.create!(name: 'Lúcia Câmara', phone_number: '+5561999990002')
+      result = described_class.new(sale_payload(name: 'LUCIA CAMARA')).perform
+      expect(result[:contact][:id]).to eq(accented.id)
+    end
+
+    it 'queues the sale for review when the name is ambiguous, without creating a lead' do
+      Contact.create!(name: 'Ana Paula Souza', phone_number: '+5561999990003')
+      Contact.create!(name: 'Ana Paula Souza', phone_number: '+5561999990004')
+
+      result = described_class.new(sale_payload(name: 'Ana Paula Souza')).perform
+
+      expect(result).to include(success: true, queued: true)
+      sale = UnlinkedSale.last
+      expect(sale).to have_attributes(reason: 'ambiguous_name', amount: 4850, status: 'pending')
+      expect(sale.candidate_contact_ids.size).to eq(2)
+      expect(Contact.count).to eq(3)
+      expect(Appointment.count).to eq(0)
+    end
+
+    it 'queues the sale when no lead matches, and is idempotent' do
+      2.times { described_class.new(sale_payload(name: 'Pessoa Inexistente')).perform }
+
+      expect(UnlinkedSale.count).to eq(1)
+      expect(UnlinkedSale.last).to have_attributes(reason: 'no_match', sold_at: Time.zone.parse('2026-10-02T00:00:00-03:00'))
+      expect(Contact.count).to eq(1)
+    end
+
+    it 'keeps the lead entry date' do
+      lead.update_columns(created_at: Time.zone.parse('2026-10-20T10:00:00-03:00'))
+      described_class.new(sale_payload(name: 'Erilana de Lima Silva')).perform
+      expect(lead.reload.created_at).to eq(Time.zone.parse('2026-10-20T10:00:00-03:00'))
+    end
+  end
+
+  describe 'repurchase' do
+    it 'marks a contact created by a repurchase as a returning customer' do
+      payload = valid_payload.deep_merge(deal: { kind: 'repurchase' })
+      described_class.new(payload).perform
+      expect(Contact.last.custom_attributes['customer_type']).to eq('returning')
+    end
+  end
+
+  describe 'inferred origin' do
+    it 'records the origin from the source CRM when there is no ad referral' do
+      payload = valid_payload.merge(referral_fallback: { source: 'instagram' })
+      described_class.new(payload).perform
+
+      attrs = Contact.last.additional_attributes
+      expect(attrs).to include('utm_source' => 'instagram', 'attribution_channel' => 'external_fallback')
+    end
+
+    it 'is replaced by the real ad when it shows up later' do
+      described_class.new(valid_payload.merge(referral_fallback: { source: 'meta_ads' })).perform
+      described_class.new(valid_payload.merge(referral: { source_id: '120260810960180456', source_type: 'ad' })).perform
+
+      attrs = Contact.last.additional_attributes
+      expect(attrs).to include('utm_source' => 'meta_ads', 'ad_id' => '120260810960180456',
+                               'attribution_channel' => 'external_referral')
+    end
+  end
 end
 # rubocop:enable RSpec/MultipleExpectations, Rails/SkipsModelValidations
