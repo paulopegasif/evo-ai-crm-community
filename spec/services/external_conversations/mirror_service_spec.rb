@@ -27,6 +27,7 @@ RSpec.describe ExternalConversations::MirrorService do
     conversation = Conversation.find(result[:conversation_id])
     expect(conversation).to have_attributes(contact_id: contact.id, source: 'imported')
     expect(conversation.inbox.channel.read_only_mirror?).to be(true)
+    expect(InboxSerializer.serialize(conversation.inbox)['read_only_mirror']).to be(true)
 
     messages = conversation.messages.reorder(:created_at).to_a
     expect(messages.map(&:message_type)).to eq(%w[activity incoming outgoing])
