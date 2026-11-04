@@ -67,6 +67,8 @@ module InboxSerializer
         result['webhook_url'] = inbox.channel.webhook_url
         result['inbox_identifier'] = inbox.channel.identifier
         result['additional_attributes'] = inbox.channel.additional_attributes
+        # Bitrix24 conversation mirror: history only, nothing can be sent from it.
+        result['read_only_mirror'] = inbox.channel.read_only_mirror?
         result['hmac_token'] = inbox.channel.hmac_token if Current.user&.role == 'administrator'
       end
 

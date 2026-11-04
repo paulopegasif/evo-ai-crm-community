@@ -21,6 +21,7 @@ class MetaAds::SyncJob < ApplicationJob
   def run(integration)
     integration.write!('last_sync_started_at' => Time.current.iso8601)
     MetaAds::SyncService.new(integration: integration).perform
+    MetaAds::ResolveUnknownAdsJob.perform_later
 
     integration.write!(
       'connection_status' => MetaAds::Integration::STATUS_CONNECTED,

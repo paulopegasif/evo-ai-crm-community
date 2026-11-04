@@ -50,7 +50,7 @@ class Api::V1::AppointmentsController < Api::V1::BaseController
 
   def show
     success_response(
-      data: AppointmentSerializer.serialize(@appointment),
+      data: AppointmentSerializer.serialize(@appointment, detail: true),
       message: 'Agendamento recuperado com sucesso'
     )
   end
@@ -78,7 +78,9 @@ class Api::V1::AppointmentsController < Api::V1::BaseController
   end
 
   def update
-    if @appointment.update(appointment_params)
+    @appointment.assign_attributes(appointment_params)
+    remember_crm_status_override
+    if @appointment.save
       success_response(
         data: AppointmentSerializer.serialize(@appointment),
         message: 'Agendamento atualizado com sucesso'
@@ -148,6 +150,14 @@ class Api::V1::AppointmentsController < Api::V1::BaseController
     @appointment = Appointment.find(params[:id])
   end
 
+  # Synced appointments are overwritten by their source; a status set in the CRM is
+  # remembered so the sync never moves it backwards (see ExternalLeads::SyncService).
+  def remember_crm_status_override
+    return unless @appointment.custom_attributes&.dig('source').present? && @appointment.status_changed?
+
+    @appointment.custom_attributes = @appointment.custom_attributes.merge('crm_override_status' => @appointment.status)
+  end
+
   def parse_datetime(val)
     return nil if val.blank?
     Time.zone.parse(val.to_s) rescue nil
@@ -161,6 +171,7 @@ class Api::V1::AppointmentsController < Api::V1::BaseController
       :start_time,
       :end_time,
       :duration_minutes,
+      :all_day,
       :status,
       :user_id,
       :contact_id,

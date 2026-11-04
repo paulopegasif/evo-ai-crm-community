@@ -27,6 +27,8 @@ module Dashboard
     MEDIA_COLUMNS = %i[spend impressions link_clicks conversations meta_leads].freeze
     MEDIA_METRIC_KEYS = %i[impressions link_clicks ctr cpc cpm conversations cost_per_conversation meta_leads
                            cost_per_meta_lead].freeze
+    DEFAULT_STALE_DAYS = 3
+    ALERT_SAMPLE = 50
 
     def initialize(params:)
       @params = params
@@ -36,6 +38,18 @@ module Dashboard
 
     def call
       Time.use_zone(@timezone) { build }
+    end
+
+    # Cohort ids and per-lead outcomes under the same filters, for the lead list.
+    def cohort_snapshot
+      Time.use_zone(@timezone) do
+        @filters = Dashboard::FiltersBuilder.new(params: @params)
+        {
+          ids: cohort_ids, scheduled: scheduled_ids, attended: attended_ids, won: won_ids,
+          revenue: cohort_revenue, attribution: cohort_ids.index_with { |id| attribution_for(id) },
+          period: period_days.first..period_days.last
+        }
+      end
     end
 
     private
@@ -59,6 +73,9 @@ module Dashboard
         campaigns: build_campaigns,
         professionals: build_professionals,
         categories: build_categories,
+        ads: build_ads,
+        velocity: build_velocity,
+        alerts: build_alerts,
         timeline: build_timeline
       }
     end
@@ -91,8 +108,11 @@ module Dashboard
     # --- Lead cohort --------------------------------------------------------------
 
     # Every lead of the period, before the source/campaign filters.
+    # Returning customers (repurchase) never count as new leads.
     def period_lead_ids
-      @period_lead_ids ||= Contact.where(created_at: time_range).pluck(:id)
+      @period_lead_ids ||= Contact.where(created_at: time_range)
+                                  .where("COALESCE(contacts.custom_attributes->>'customer_type', '') <> 'returning'")
+                                  .pluck(:id)
     end
 
     def cohort_ids
@@ -103,11 +123,11 @@ module Dashboard
       end
     end
 
-    # [contact_id, status, price] of the cohort's non-cancelled appointments.
+    # [contact_id, status, price, start_time] of the cohort's non-cancelled appointments.
     def cohort_appointment_rows
       @cohort_appointment_rows ||= for_professional(Appointment.where(contact_id: cohort_ids))
                                    .where.not(status: 'cancelled')
-                                   .pluck(:contact_id, :status, :price)
+                                   .pluck(:contact_id, :status, :price, :start_time)
     end
 
     def scheduled_ids
@@ -115,15 +135,15 @@ module Dashboard
     end
 
     def attended_ids
-      @attended_ids ||= cohort_appointment_rows.filter_map { |id, status, _| id if status == 'attended' }.to_set
+      @attended_ids ||= cohort_appointment_rows.filter_map { |id, status, _, _| id if status == 'attended' }.to_set
     end
 
+    # Scheduled an evaluation, or the card reached a stage flagged as qualifying.
+    # Contact-attempt and triage stages never qualify on their own.
     def qualified_ids
       @qualified_ids ||= begin
         advanced = PipelineItem.joins(:pipeline_stage)
-                               .where(contact_id: cohort_ids)
-                               .where('pipeline_stages.position > 1')
-                               .where.not(pipeline_stages: { stage_type: PipelineStage.stage_types[:cancelled] })
+                               .where(contact_id: cohort_ids, pipeline_stages: { counts_as_qualified: true })
                                .pluck(:contact_id)
         scheduled_ids | advanced.to_set
       end
@@ -132,7 +152,7 @@ module Dashboard
     # Attended and either paid for the procedure or closed in a completed pipeline stage.
     def won_ids
       @won_ids ||= begin
-        paid = cohort_appointment_rows.filter_map { |id, status, price| id if status == 'attended' && price.to_f.positive? }
+        paid = cohort_appointment_rows.filter_map { |id, status, price, _| id if status == 'attended' && price.to_f.positive? }
         closed = PipelineItem.joins(:pipeline_stage)
                              .where(contact_id: cohort_ids, pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
                              .pluck(:contact_id)
@@ -142,7 +162,7 @@ module Dashboard
 
     # contact_id => revenue of the attended appointments of that lead.
     def cohort_revenue
-      @cohort_revenue ||= cohort_appointment_rows.each_with_object(Hash.new(0.0)) do |(id, status, price), acc|
+      @cohort_revenue ||= cohort_appointment_rows.each_with_object(Hash.new(0.0)) do |(id, status, price, _), acc|
         acc[id] += price.to_f if status == 'attended'
       end
     end
@@ -158,7 +178,8 @@ module Dashboard
         qualification_rate: percent(qualified_ids.size, total),
         scheduling_rate: percent(scheduled_ids.size, total),
         conversion_rate: percent(won_ids.size, total),
-        cohort_revenue: cohort_revenue.values.sum.round(2)
+        cohort_revenue: cohort_revenue.values.sum.round(2),
+        won_ticket: ratio(cohort_revenue.values.sum, won_ids.size)
       }
     end
 
@@ -184,10 +205,22 @@ module Dashboard
 
     # --- Period agenda ------------------------------------------------------------
 
-    # [user_id, status, price, category, start_time] of appointments in the period.
+    # [user_id, status, price, category, start_time, overdue, contact_id] of appointments in the period.
     def agenda_rows
       @agenda_rows ||= for_professional(Appointment.where(start_time: time_range))
-                       .pluck(:user_id, :status, :price, :category, :start_time)
+                       .pluck(:user_id, :status, :price, :category, :start_time,
+                              Arel.sql(overdue_sql), :contact_id)
+    end
+
+    # Past appointments still scheduled/confirmed; all-day ones only after their day ends.
+    def overdue_sql
+      now = ActiveRecord::Base.connection.quote(Time.current)
+      "(appointments.status IN ('scheduled', 'confirmed') AND " \
+        "((appointments.all_day AND appointments.end_time < #{now}) OR (NOT appointments.all_day AND appointments.start_time < #{now})))"
+    end
+
+    def unlinked_sales_scope
+      professional_id ? UnlinkedSale.none : UnlinkedSale.where(status: 'pending').sold_in(time_range)
     end
 
     def agenda_kpis
@@ -196,23 +229,29 @@ module Dashboard
       no_show = counts.fetch('no_show', 0)
       paid = agenda_rows.count { |_, status, price| status == 'attended' && price.to_f.positive? }
       revenue = agenda_revenue
+      overdue = agenda_rows.count { |row| row[5] }
+      unlinked = unlinked_sales_scope.pluck(:amount).map(&:to_f)
 
       {
         total_appointments: agenda_rows.size,
         total_confirmed: counts.fetch('confirmed', 0),
-        total_pending: PENDING_STATUSES.sum { |status| counts.fetch(status, 0) },
+        total_pending: PENDING_STATUSES.sum { |status| counts.fetch(status, 0) } - overdue,
+        total_no_outcome: overdue,
+        unlinked_sales: unlinked.size,
+        unlinked_revenue: unlinked.sum.round(2),
         appointments_attended: attended,
         total_no_show: no_show,
         total_cancelled: counts.fetch('cancelled', 0),
         show_rate: percent(attended, attended + no_show),
-        total_revenue: revenue,
+        # Sales waiting for review still count in the agenda revenue (never in the cohort).
+        total_revenue: (revenue + unlinked.sum).round(2),
         paid_appointments: paid,
         average_ticket: ratio(revenue, paid)
       }
     end
 
     def agenda_revenue
-      agenda_rows.sum { |_, status, price, _, _| status == 'attended' ? price.to_f : 0.0 }.round(2)
+      agenda_rows.sum { |row| row[1] == 'attended' ? row[2].to_f : 0.0 }.round(2)
     end
 
     def build_professionals
@@ -229,16 +268,19 @@ module Dashboard
           attended: attended,
           no_show: no_show,
           cancelled: counts.fetch('cancelled', 0),
-          pending: PENDING_STATUSES.sum { |status| counts.fetch(status, 0) },
+          pending: PENDING_STATUSES.sum { |status| counts.fetch(status, 0) } - rows.count { |row| row[5] },
+          no_outcome: rows.count { |row| row[5] },
           show_rate: percent(attended, attended + no_show),
-          revenue: rows.sum { |_, status, price, _, _| status == 'attended' ? price.to_f : 0.0 }.round(2)
+          won: rows.count { |row| row[1] == 'attended' && row[2].to_f.positive? },
+          sale_rate: percent(rows.count { |row| row[1] == 'attended' && row[2].to_f.positive? }, attended),
+          revenue: rows.sum { |row| row[1] == 'attended' ? row[2].to_f : 0.0 }.round(2)
         }
       end.sort_by { |p| [-p[:revenue], -p[:total]] }
     end
 
     def build_categories
       colors = Appointment::CATEGORIES.to_h { |c| [c[:name], c[:color]] }
-      rows = agenda_rows.reject { |_, status, _, _, _| status == 'cancelled' }
+      rows = agenda_rows.reject { |row| row[1] == 'cancelled' }
       total_revenue = agenda_revenue
 
       rows.group_by { |row| row[3].presence || 'Geral' }.map do |name, group|
@@ -250,10 +292,129 @@ module Dashboard
           count: group.size,
           attended: attended.size,
           revenue: revenue,
+          ticket: ratio(revenue, attended.count { |row| row[2].to_f.positive? }),
           share_percentage: percent(group.size, rows.size),
           revenue_share: percent(revenue, total_revenue)
         }
       end.sort_by { |c| [-c[:revenue], -c[:count]] }
+    end
+
+    # --- Ads ranking ----------------------------------------------------------------
+
+    # One row per ad of the cohort's leads plus ads that spent in the period.
+    def build_ads
+      rows = {}
+      cohort_ids.each do |id|
+        ad_id = attribution_ad_ids[id]
+        next if ad_id.blank?
+
+        add_lead(rows[ad_id] ||= { ad_id: ad_id }.merge(empty_outcome), id)
+      end
+      ad_media.each_key { |ad_id| rows[ad_id] ||= { ad_id: ad_id }.merge(empty_outcome) }
+
+      catalog = MetaAds::Ad.where(meta_id: rows.keys).pluck(:meta_id, :name, :meta_campaign_id, :effective_status)
+                           .to_h { |id, name, campaign, status| [id, { name: name, campaign_id: campaign, status: status }] }
+      campaign_names = MetaAds::Campaign.where(meta_id: catalog.values.filter_map { |a| a[:campaign_id] }).pluck(:meta_id, :name).to_h
+
+      rows.values.map do |row|
+        info = catalog[row[:ad_id]] || {}
+        media = ad_media[row[:ad_id]] || empty_media
+        spend = media[:spend].to_f.round(2)
+        row.merge(
+          name: info[:name].presence || UNKNOWN_AD,
+          campaign_name: campaign_names[info[:campaign_id]],
+          unavailable: info.empty? || info[:status] == MetaAds::Ad::UNAVAILABLE,
+          revenue: row[:revenue].round(2),
+          spend: spend,
+          conversations: media[:conversations].to_i,
+          cpl: ratio(spend, row[:leads]),
+          cac: ratio(spend, row[:won]),
+          roas: ratio(row[:revenue], spend)
+        )
+      end.sort_by { |a| [-a[:revenue], -a[:spend], -a[:leads]] }
+    end
+
+    def attribution_ad_ids
+      @attribution_ad_ids ||= Contact.where(id: cohort_ids).pluck(:id, Arel.sql(AD_ID_SQL)).to_h
+    end
+
+    def ad_media
+      @ad_media ||= media_scope.group(:meta_ad_id).pluck(:meta_ad_id, *media_sums)
+                               .to_h { |ad_id, *values| [ad_id, MEDIA_COLUMNS.zip(values.map { |v| v || 0 }).to_h] }
+    end
+
+    # --- Funnel velocity ------------------------------------------------------------
+
+    # Median days lead -> first evaluation and first evaluation -> close (card
+    # completed, or the paid appointment when the card has no completion date).
+    def build_velocity
+      created = Contact.where(id: scheduled_ids.to_a).pluck(:id, :created_at).to_h
+      first_eval = cohort_appointment_rows.group_by(&:first).transform_values { |rows| rows.map(&:last).compact.min }
+      to_eval = first_eval.filter_map { |id, at| days_between(created[id], at) }
+
+      closed_at = PipelineItem.joins(:pipeline_stage)
+                              .where(contact_id: won_ids.to_a, pipeline_stages: { stage_type: PipelineStage.stage_types[:completed] })
+                              .group(:contact_id).minimum(:completed_at)
+      paid_at = cohort_appointment_rows.select { |_, status, price, _| status == 'attended' && price.to_f.positive? }
+                                       .group_by(&:first).transform_values { |rows| rows.map(&:last).compact.min }
+      to_close = won_ids.filter_map { |id| days_between(first_eval[id], closed_at[id] || paid_at[id]) }
+
+      { lead_to_evaluation_days: median(to_eval), evaluation_to_close_days: median(to_close),
+        lead_to_evaluation_count: to_eval.size, evaluation_to_close_count: to_close.size }
+    end
+
+    def days_between(from, to)
+      return nil if from.nil? || to.nil? || to < from
+
+      ((to - from) / 1.day).floor
+    end
+
+    def median(values)
+      return nil if values.empty?
+
+      sorted = values.sort
+      mid = sorted.size / 2
+      sorted.size.odd? ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2.0).round(1)
+    end
+
+    # --- Operational alerts -----------------------------------------------------------
+
+    def stale_days
+      days = @params[:stale_days].to_i
+      days.positive? ? days : DEFAULT_STALE_DAYS
+    end
+
+    def stale_lead_ids
+      cutoff = stale_days.days.ago
+      cancelled = PipelineItem.joins(:pipeline_stage)
+                              .where(contact_id: cohort_ids, pipeline_stages: { stage_type: PipelineStage.stage_types[:cancelled] })
+                              .pluck(:contact_id).to_set
+      ids = cohort_ids.reject { |id| scheduled_ids.include?(id) || cancelled.include?(id) }
+      Contact.where(id: ids).where('contacts.created_at < ?', cutoff).order(created_at: :asc).pluck(:id)
+    end
+
+    def build_alerts
+      stale = stale_lead_ids
+      overdue = for_professional(Appointment.without_outcome).where(start_time: time_range)
+      {
+        stale_days: stale_days,
+        stale_leads: { count: stale.size, sample: alert_contacts(stale.first(ALERT_SAMPLE)) },
+        no_outcome: {
+          count: overdue.count,
+          sample: overdue.includes(:contact, :user).order(start_time: :asc).limit(ALERT_SAMPLE).map do |apt|
+            { id: apt.id, start_time: apt.start_time.iso8601, all_day: apt.all_day, status: apt.status,
+              contact_id: apt.contact_id, contact_name: apt.contact&.name, user_name: apt.user&.name }
+          end
+        },
+        unlinked_sales: { count: UnlinkedSale.pending.count }
+      }
+    end
+
+    def alert_contacts(ids)
+      Contact.where(id: ids).pluck(:id, :name, :phone_number, :created_at).map do |id, name, phone, created_at|
+        { id: id, name: name, phone_number: phone, created_at: created_at.iso8601,
+          campaign_name: attribution_for(id)[:campaign_name] }
+      end
     end
 
     # --- Timeline -----------------------------------------------------------------
@@ -325,6 +486,8 @@ module Dashboard
     SOURCE_LABELS = { 'meta_ads' => 'Meta Ads' }.freeze
     UNKNOWN_SOURCE = 'Não informada'
     NO_CAMPAIGN = 'Sem campanha'
+    UNKNOWN_AD = 'Anúncio removido ou de outra conta'
+    UNIDENTIFIED_AD = 'Anúncio não identificado'
 
     def attribution_for(contact_id)
       attribution_map[contact_id] || no_attribution
@@ -344,9 +507,11 @@ module Dashboard
     def build_attribution(source, ad_id, utm_campaign, meta_campaign_id, meta_campaign_name)
       return meta_campaign_attribution(meta_campaign_id, meta_campaign_name) if meta_campaign_id.present?
 
-      source_label = SOURCE_LABELS.fetch(source, source.presence || UNKNOWN_SOURCE)
+      source_label = source == 'meta_ads' || ad_id.present? ? SOURCE_LABELS['meta_ads'] : LeadOrigin.source_label(source)
       key, name = if ad_id.present?
-                    ["ad:#{ad_id}", "Anúncio #{ad_id}"]
+                    ['ad:unknown', UNKNOWN_AD]
+                  elsif source == 'meta_ads'
+                    ['ad:unidentified', UNIDENTIFIED_AD]
                   elsif utm_campaign.present?
                     ["utm:#{utm_campaign}", utm_campaign]
                   else
@@ -451,13 +616,19 @@ module Dashboard
       spend = totals[:spend].to_f
       ad_ids = cohort_ids.select { |id| attribution_for(id)[:from_ad] }
       ad_won = ad_ids.count { |id| won_ids.include?(id) }
+      ad_scheduled = ad_ids.count { |id| scheduled_ids.include?(id) }
+      ad_attended = ad_ids.count { |id| attended_ids.include?(id) }
       ad_revenue = ad_ids.sum { |id| cohort_revenue[id] }.round(2)
       conversations = totals[:conversations].to_i
 
       {
         ad_spend: spend.round(2),
         ad_leads: ad_ids.size,
+        ad_scheduled: ad_scheduled,
+        ad_attended: ad_attended,
         ad_won: ad_won,
+        cost_per_scheduled: ratio(spend, ad_scheduled),
+        cost_per_attended: ratio(spend, ad_attended),
         ad_revenue: ad_revenue,
         avg_cpl: ratio(spend, ad_ids.size),
         ad_cac: ratio(spend, ad_won),
@@ -530,10 +701,11 @@ module Dashboard
       end
     end
 
+    # Always plain Floats: SUM() returns BigDecimal, which JSON renders as a string.
     def percent(part, whole, precision: 1)
       return nil if whole.to_f.zero?
 
-      ((part.to_f / whole) * 100).round(precision)
+      ((part.to_f / whole.to_f) * 100).round(precision)
     end
 
     def ratio(numerator, denominator, precision: 2)

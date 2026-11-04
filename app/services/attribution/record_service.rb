@@ -31,7 +31,8 @@ class Attribution::RecordService
       current = (@contact.additional_attributes || {}).deep_dup
       now = Time.current.iso8601
 
-      if first_touch_missing?(current)
+      if first_touch_missing?(current) || upgrades_inferred_touch?(current, attributes)
+        clear_first_touch(current) if upgrades_inferred_touch?(current, attributes)
         current.merge!(attributes)
         current['attribution_channel'] = @source.to_s
         current['attributed_at'] = now
@@ -72,6 +73,16 @@ class Attribution::RecordService
 
   def utm_touch
     @touch.stringify_keys.slice(*UTM_KEYS)
+  end
+
+  # A first touch inferred from the CRM (deal title or source field) is replaced
+  # as soon as the real ad (ad_id) shows up.
+  def upgrades_inferred_touch?(current, attributes)
+    current['attribution_channel'] == 'external_fallback' && current['ad_id'].blank? && attributes['ad_id'].present?
+  end
+
+  def clear_first_touch(current)
+    (TOUCH_KEYS + %w[attribution_channel attributed_at]).each { |key| current.delete(key) }
   end
 
   def first_touch_missing?(attributes)

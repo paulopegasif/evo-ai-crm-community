@@ -25,3 +25,13 @@ RSpec.describe 'GET /api/v1/dashboard/customer', type: :routing do
     skip 'Requires authenticated account request helper and fixture data in this repository setup'
   end
 end
+
+RSpec.describe 'Lead tracking routes', type: :routing do
+  it 'routes the lead list, the journey and the review queue' do
+    expect(get: '/api/v1/dashboard/leads/list').to route_to(controller: 'api/v1/dashboard', action: 'lead_list', format: 'json')
+    expect(get: '/api/v1/dashboard/leads/abc/journey').to route_to(controller: 'api/v1/dashboard', action: 'lead_journey',
+                                                                   contact_id: 'abc', format: 'json')
+    expect(post: '/api/v1/unlinked_sales/abc/link').to route_to(controller: 'api/v1/unlinked_sales', action: 'link', id: 'abc',
+                                                               format: 'json')
+  end
+end
