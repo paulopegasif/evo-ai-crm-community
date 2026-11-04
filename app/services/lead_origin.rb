@@ -13,7 +13,9 @@ class LeadOrigin
   SOURCE_LABELS = {
     'meta_ads' => 'Meta Ads', 'instagram' => 'Instagram', 'phone' => 'Telefone',
     'google' => 'Google', 'referral' => 'Indicação', 'site' => 'Site',
-    'facebook' => 'Facebook', 'whatsapp' => 'WhatsApp (orgânico)', 'existing_customer' => 'Cliente existente'
+    'facebook' => 'Facebook', 'whatsapp' => 'WhatsApp (orgânico)', 'existing_customer' => 'Cliente existente',
+    'google_ads' => 'Google Ads', 'facebook_ads' => 'Facebook Ads', 'instagram_ads' => 'Instagram Ads',
+    'tiktok' => 'TikTok', 'tiktok_ads' => 'TikTok Ads', 'indicacao' => 'Indicação', 'organic' => 'Orgânico'
   }.freeze
   UNKNOWN_SOURCE = 'Não informada'
 
