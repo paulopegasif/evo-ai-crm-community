@@ -240,6 +240,28 @@ class Contact < ApplicationRecord
     type == 'group'
   end
 
+  # Deletes the contact together with the records whose foreign keys would
+  # block it (pipeline_items) or that must not outlive it. The has_many
+  # associations use destroy_async, which runs only after the contact row is
+  # gone, so they cannot satisfy the FK on their own. Shared by the single
+  # delete endpoint and BulkActionsJob.
+  def destroy_with_dependents!
+    transaction do
+      conversations.find_each do |conversation|
+        conversation.facebook_comment_moderations.destroy_all
+        conversation.pipeline_items.destroy_all
+        conversation.destroy!
+      end
+
+      PipelineItem.where(contact_id: id).destroy_all
+      contact_inboxes.destroy_all
+      notes.destroy_all
+      csat_survey_responses.destroy_all
+      messages.destroy_all
+      destroy!
+    end
+  end
+
   private
 
   def ip_lookup
