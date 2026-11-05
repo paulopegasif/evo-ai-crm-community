@@ -61,7 +61,6 @@ class Conversation < ApplicationRecord
   validates :inbox_id, presence: true
   validates :contact_id, presence: true
   before_validation :validate_additional_attributes
-  before_create :ensure_display_id
   validates :additional_attributes, jsonb_attributes_length: true
   validates :custom_attributes, jsonb_attributes_length: true
   validates :uuid, uniqueness: true
@@ -272,13 +271,18 @@ class Conversation < ApplicationRecord
 
   private
 
+  # Arbitrary constant key for the advisory lock that serializes display_id allocation.
+  DISPLAY_ID_LOCK_KEY = 7_268_435_001
+
   def ensure_display_id
     return if display_id.present?
 
-    # Use a globally sequential display_id
-    # This is thread-safe because we're using a database transaction
-    max_display_id = self.class.maximum(:display_id) || 0
-    self.display_id = max_display_id + 1
+    # Globally sequential display_id. Without the lock, concurrent creates read the same MAX
+    # and all but one fail on index_conversations_on_display_id (PG::UniqueViolation).
+    # before_create runs inside the save transaction, so the transaction-scoped lock is held
+    # until commit; xact locks are also safe behind PgBouncer transaction pooling.
+    self.class.connection.execute("SELECT pg_advisory_xact_lock(#{DISPLAY_ID_LOCK_KEY})")
+    self.display_id = (self.class.maximum(:display_id) || 0) + 1
   end
 
   def execute_after_update_commit_callbacks
