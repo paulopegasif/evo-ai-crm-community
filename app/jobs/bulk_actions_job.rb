@@ -18,7 +18,6 @@ class BulkActionsJob < ApplicationJob
   def bulk_update
     if @params[:type] == 'Contact'
       bulk_contact_update
-      { success_ids: [], failed_ids: [] }
     else
       bulk_remove_labels
       bulk_conversation_update
@@ -31,6 +30,8 @@ class BulkActionsJob < ApplicationJob
     case action
     when 'delete'
       bulk_delete_contacts
+    else
+      { success_ids: [], failed_ids: [] }
     end
   end
 
@@ -78,10 +79,21 @@ class BulkActionsJob < ApplicationJob
     conversation.update!(label_list: labels)
   end
 
+  # One failing contact must not abort the rest: each is deleted in its own
+  # transaction and failures are reported back by id.
   def bulk_delete_contacts
+    success_ids = []
+    failed_ids = []
+
     records.each do |contact|
-      contact.destroy!
+      contact.destroy_with_dependents!
+      success_ids << contact.id
+    rescue StandardError => e
+      Rails.logger.error "BulkActionsJob: could not delete contact #{contact.id}: #{e.class}: #{e.message}"
+      failed_ids << contact.id
     end
+
+    { success_ids: success_ids, failed_ids: failed_ids }
   end
 
   def records_to_updated(ids)

@@ -268,10 +268,7 @@ class Api::V1::ContactsController < Api::V1::BaseController
     end
 
     begin
-      ActiveRecord::Base.transaction do
-        cleanup_contact_dependent_records(@contact)
-        @contact.destroy!
-      end
+      @contact.destroy_with_dependents!
 
       success_response(data:{}, message: 'Contact deleted successfully', status: :ok)
     rescue ActiveRecord::InvalidForeignKey, ActiveRecord::StatementInvalid => e
@@ -584,23 +581,6 @@ class Api::V1::ContactsController < Api::V1::BaseController
 
   def process_avatar_from_url
     ::Avatar::AvatarFromUrlJob.perform_later(@contact, params[:avatar_url]) if params[:avatar_url].present?
-  end
-
-  def cleanup_contact_dependent_records(contact)
-    conversation_ids = contact.conversations.pluck(:id)
-
-    contact.conversations.find_each do |conversation|
-      conversation.facebook_comment_moderations.destroy_all
-      conversation.pipeline_items.destroy_all
-      conversation.destroy!
-    end
-
-    PipelineItem.where(contact_id: contact.id).destroy_all
-
-    contact.contact_inboxes.destroy_all
-    contact.notes.destroy_all
-    contact.csat_survey_responses.destroy_all
-    contact.messages.destroy_all
   end
 
   def render_error(error, error_status)
