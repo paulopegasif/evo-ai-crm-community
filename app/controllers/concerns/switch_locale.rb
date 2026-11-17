@@ -28,6 +28,9 @@ module SwitchLocale
     return I18n.default_locale.to_s if locale.blank?
 
     available_locales = I18n.available_locales.map(&:to_s)
+    # Accept BCP-47 style codes ("pt-BR") for our underscore locales ("pt_BR").
+    # DEFAULT_LOCALE=pt-BR silently fell back to English before.
+    locale = locale.to_s.tr('-', '_')
     locale_without_variant = locale.split('_')[0]
 
     if available_locales.include?(locale)
