@@ -27,9 +27,11 @@ class Attribution::RecordService
     attributes = normalized_touch
     return false if attributes.blank?
 
+    new_click = false
     @contact.with_lock do
       current = (@contact.additional_attributes || {}).deep_dup
       now = Time.current.iso8601
+      had_click = current['ctwa_clid'].present?
 
       if first_touch_missing?(current) || upgrades_inferred_touch?(current, attributes)
         clear_first_touch(current) if upgrades_inferred_touch?(current, attributes)
@@ -41,7 +43,10 @@ class Attribution::RecordService
       current['last_touch'] = attributes.merge('attribution_channel' => @source.to_s, 'attributed_at' => now)
 
       @contact.update_columns(additional_attributes: current, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+      new_click = !had_click && current['ctwa_clid'].present?
     end
+    # Conversions API: the lead is now tied to a Click-to-WhatsApp ad click.
+    MetaConversions::Tracker.lead(@contact) if new_click
     true
   end
 

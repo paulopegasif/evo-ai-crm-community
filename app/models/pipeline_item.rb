@@ -77,6 +77,7 @@ class PipelineItem < ApplicationRecord
   after_create_commit :broadcast_stage_update_to_evo_flow
   after_update :create_stage_change_movement, if: :saved_change_to_pipeline_stage_id?
   after_update_commit :broadcast_stage_update_to_evo_flow, if: :saved_change_to_pipeline_stage_id?
+  after_commit :track_meta_qualified, on: [:create, :update], if: :saved_change_to_pipeline_stage_id?
   after_update :publish_pipeline_item_updated
   after_update :publish_pipeline_item_completed, if: :saved_change_to_completed_at?
   after_destroy :publish_pipeline_item_deleted
@@ -257,6 +258,11 @@ class PipelineItem < ApplicationRecord
   end
 
   private
+
+  # Conversions API: reaching a stage marked "counts as qualified".
+  def track_meta_qualified
+    MetaConversions::Tracker.qualified(contact) if contact && pipeline_stage&.counts_as_qualified
+  end
 
   def validate_custom_fields_structure
     return if custom_fields.blank?
