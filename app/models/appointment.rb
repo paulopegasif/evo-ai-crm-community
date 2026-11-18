@@ -51,6 +51,7 @@ class Appointment < ApplicationRecord
   validate :end_time_after_start_time
 
   before_validation :set_default_end_time, on: [:create, :update]
+  after_commit :track_meta_conversions, on: [:create, :update]
 
   scope :for_user, ->(uid) { where(user_id: uid) if uid.present? }
   scope :for_contact, ->(cid) { where(contact_id: cid) if cid.present? }
@@ -99,6 +100,20 @@ class Appointment < ApplicationRecord
   end
 
   private
+
+  # Conversions API: first appointment = qualified lead; attended with a price = purchase.
+  def track_meta_conversions
+    return if contact.nil?
+
+    MetaConversions::Tracker.qualified(contact) if previously_new_record? && status != 'cancelled'
+    MetaConversions::Tracker.purchase(self) if purchase_confirmed?
+  end
+
+  def purchase_confirmed?
+    return false unless status == 'attended' && price.to_f.positive?
+
+    previously_new_record? || saved_change_to_status? || saved_change_to_price?
+  end
 
   def set_default_end_time
     if start_time.present? && (end_time.blank? || end_time <= start_time)
