@@ -98,6 +98,17 @@ class Channel::Whatsapp < ApplicationRecord
     false
   end
 
+  def supports_message_edit?
+    provider_service.respond_to?(:edit_message)
+  end
+
+  # Edits a sent message on the provider. Raises on failure (message kept as is).
+  def edit_message(message, new_content)
+    raise ArgumentError, "provider #{provider} does not support editing" unless supports_message_edit?
+
+    provider_service.edit_message(message, new_content)
+  end
+
   def use_internal_host?
     provider == 'baileys' && ENV.fetch('BAILEYS_PROVIDER_USE_INTERNAL_HOST_URL', false)
   end

@@ -9,7 +9,7 @@ module Whatsapp::EvolutionGoHandlers::MessagesUpsert
 
   def handle_message
     if protocol_message?
-      handle_revoke_protocol
+      protocol_edit_message? ? handle_edit_protocol : handle_revoke_protocol
       return
     end
 
@@ -36,6 +36,35 @@ module Whatsapp::EvolutionGoHandlers::MessagesUpsert
     source_id = revoked_message_source_id(protocol)
     Rails.logger.info "Evolution Go API: Protocol message (type: #{protocol[:type].inspect}, revoked id: #{source_id.inspect}) — not creating a message; marking original revoked"
     mark_message_revoked_by_source_id(source_id)
+  end
+
+  # whatsmeow ProtocolMessage_Type: REVOKE = 0, MESSAGE_EDIT = 14. Evolution Go
+  # serializes the enum as a number; accept the name too.
+  PROTOCOL_EDIT_TYPES = [14, '14', 'MESSAGE_EDIT'].freeze
+
+  def protocol_edit_message?
+    protocol = @evolution_go_message[:protocolMessage]
+    PROTOCOL_EDIT_TYPES.include?(protocol[:type]) || protocol[:editedMessage].present?
+  end
+
+  # An edit (by the contact, or by us from the phone) arrives as a
+  # protocolMessage carrying the new content. Previously it fell into the revoke
+  # path and flagged the original as "deleted by contact".
+  def handle_edit_protocol
+    protocol = @evolution_go_message[:protocolMessage]
+    source_id = revoked_message_source_id(protocol)
+    new_content = edited_text(protocol[:editedMessage])
+    Rails.logger.info "Evolution Go API: Edit protocol for #{source_id.inspect} — updating content"
+    apply_message_edit_by_source_id(source_id, new_content)
+  end
+
+  def edited_text(edited_message)
+    return nil unless edited_message.is_a?(Hash)
+
+    edited_message[:conversation].presence ||
+      edited_message.dig(:extendedTextMessage, :text).presence ||
+      edited_message.dig(:imageMessage, :caption).presence ||
+      edited_message.dig(:videoMessage, :caption).presence
   end
 
   def set_contact
@@ -166,10 +195,24 @@ module Whatsapp::EvolutionGoHandlers::MessagesUpsert
     if sender_alt_value.present?
       Rails.logger.info "Evolution Go API: Using SenderAlt '#{sender_alt_value}' as source_id"
       sender_alt_value
+    elsif sender_lid_jid.present?
+      # Chat addressed by LID with no phone alternative: keep the full "<lid>@lid"
+      # JID. Stripping the suffix made the LID digits look like a phone number, so
+      # replies went to "<lid>@s.whatsapp.net" and failed ("no LID found").
+      Rails.logger.info "Evolution Go API: Using LID '#{sender_lid_jid}' as source_id (no SenderAlt available)"
+      sender_lid_jid
     else
       Rails.logger.info "Evolution Go API: Using phone_number '#{phone_number}' as source_id (no SenderAlt available)"
       phone_number
     end
+  end
+
+  # "<lid>@lid" (device suffix stripped) when the sender is addressed by LID.
+  def sender_lid_jid
+    jid = sender_id.to_s
+    return nil unless jid.end_with?('@lid')
+
+    "#{jid.split('@').first.sub(/:\d+\z/, '')}@lid"
   end
 
   def build_contact_attributes(push_name, phone_number, sender_alt_value, is_whatsapp_number)
@@ -177,8 +220,10 @@ module Whatsapp::EvolutionGoHandlers::MessagesUpsert
       name: push_name
     }
 
-    # Use SenderAlt as identifier if available
-    attributes[:identifier] = sender_alt_value if sender_alt_value.present?
+    # Use SenderAlt as identifier if available (else the LID JID, which is what
+    # outgoing echoes are matched by — see set_contact_for_outgoing).
+    identifier = sender_alt_value.presence || sender_lid_jid
+    attributes[:identifier] = identifier if identifier.present?
 
     # Only set phone_number if it's a WhatsApp phone number (@s.whatsapp.net)
     attributes[:phone_number] = "+#{phone_number}" if is_whatsapp_number

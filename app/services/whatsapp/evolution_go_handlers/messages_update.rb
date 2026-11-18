@@ -107,6 +107,8 @@ module Whatsapp::EvolutionGoHandlers::MessagesUpdate
     # Update message content
     message.update!(
       content: new_content,
+      is_edited: true,
+      previous_content: message.previous_content.presence || message.content,
       additional_attributes: message.additional_attributes.merge(
         evolution_go_edited: true,
         evolution_go_edit_timestamp: edited_message[:timestampMs]

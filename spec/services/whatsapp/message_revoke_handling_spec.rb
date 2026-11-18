@@ -51,6 +51,70 @@ RSpec.describe 'WhatsApp revoke handling (EVO-1748 / EVO-1890)' do
     end
   end
 
+  describe 'edit protocol via #handle_message' do
+    let(:messages) { double('messages') }
+    let(:original) { double('Message', id: 9, content: 'old text', previous_content: nil) }
+
+    before do
+      allow(inbox).to receive(:messages).and_return(messages)
+      allow(messages).to receive(:find_by).with(source_id: 'ABC').and_return(original)
+    end
+
+    [14, 'MESSAGE_EDIT'].each do |type|
+      it "updates the content instead of flagging a revoke (type #{type.inspect})" do
+        service.instance_variable_set(
+          :@evolution_go_message,
+          { protocolMessage: { type: type, key: { id: 'ABC' }, editedMessage: { conversation: 'new text' } } }
+        )
+
+        expect(service).not_to receive(:message_processable?)
+        expect(original).not_to receive(:revoked_by_contact=)
+        expect(original).to receive(:update!).with(content: 'new text', is_edited: true, previous_content: 'old text')
+
+        service.send(:handle_message)
+      end
+    end
+
+    it 'reads the edited text from extendedTextMessage too' do
+      service.instance_variable_set(
+        :@evolution_go_message,
+        { protocolMessage: { type: 14, key: { id: 'ABC' }, editedMessage: { extendedTextMessage: { text: 'via ext' } } } }
+      )
+      expect(original).to receive(:update!).with(content: 'via ext', is_edited: true, previous_content: 'old text')
+
+      service.send(:handle_message)
+    end
+
+    it 'still treats type 0 (REVOKE) as a revoke' do
+      service.instance_variable_set(:@evolution_go_message, { protocolMessage: { type: 0, key: { id: 'ABC' } } })
+      allow(original).to receive_messages(revoked_by_contact: false, incoming?: true)
+
+      expect(original).to receive(:revoked_by_contact=).with(true)
+      expect(original).to receive(:save!)
+
+      service.send(:handle_message)
+    end
+  end
+
+  describe '#determine_source_id for LID-addressed chats' do
+    it 'keeps the full <lid>@lid when there is no SenderAlt' do
+      allow(service).to receive(:sender_id).and_return('75595736191090:12@lid')
+
+      expect(service.send(:determine_source_id, nil, '75595736191090')).to eq('75595736191090@lid')
+      expect(service.send(:build_contact_attributes, 'Ana', '75595736191090', nil, false))
+        .to eq(name: 'Ana', identifier: '75595736191090@lid')
+    end
+
+    it 'still prefers SenderAlt, and plain phone JIDs keep the phone number' do
+      allow(service).to receive(:sender_id).and_return('75595736191090@lid')
+      expect(service.send(:determine_source_id, '5511999990000@s.whatsapp.net', '75595736191090'))
+        .to eq('5511999990000@s.whatsapp.net')
+
+      allow(service).to receive(:sender_id).and_return('5511999990000@s.whatsapp.net')
+      expect(service.send(:determine_source_id, nil, '5511999990000')).to eq('5511999990000')
+    end
+  end
+
   describe '#revoked_message_source_id' do
     it 'extracts the key id (camelCase or capitalized)' do
       expect(service.send(:revoked_message_source_id, { key: { id: 'X1' } })).to eq('X1')
