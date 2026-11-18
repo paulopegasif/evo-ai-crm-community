@@ -4,7 +4,8 @@ class Api::V1::Conversations::MessagesController < Api::V1::Conversations::BaseC
     create: 'conversations.update',
     update: 'conversations.update',
     destroy: 'conversations.update',
-    retry: 'conversations.update'
+    retry: 'conversations.update',
+    edit: 'conversations.update'
   })
 
   before_action :ensure_api_inbox, only: :update
@@ -16,6 +17,19 @@ class Api::V1::Conversations::MessagesController < Api::V1::Conversations::BaseC
       data: MessageSerializer.serialize_collection(@messages, include_attachments: true, include_sender: true),
       message: 'Messages retrieved successfully'
     )
+  end
+
+  # PATCH .../messages/:id/edit  { content: "new text" } — see Messages::EditService.
+  def edit
+    @message = Messages::EditService.new(message, params[:content]).perform
+    success_response(
+      data: MessageSerializer.serialize(@message.reload, include_attachments: true, include_sender: true),
+      message: 'Message edited successfully'
+    )
+  rescue ActiveRecord::RecordNotFound
+    error_response(ApiErrorCodes::RESOURCE_NOT_FOUND, 'Message not found', status: :not_found)
+  rescue StandardError => e
+    error_response(ApiErrorCodes::VALIDATION_ERROR, 'Failed to edit message', details: e.message, status: :unprocessable_entity)
   end
 
   def create
