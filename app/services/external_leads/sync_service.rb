@@ -79,7 +79,9 @@ module ExternalLeads
       phone = @contact_params[:phone_number].to_s.strip
       if phone.blank?
         # Sales are often registered on a phone-less contact; they are tied to the lead by name.
-        @errors << 'contact.phone_number is required' unless sale?
+        # Leads from channels without a phone (Instagram Direct) are identified by the
+        # source CRM's contact id instead.
+        @errors << 'contact.phone_number is required' unless sale? || @contact_params[:external_id].present?
       elsif !E164_FORMAT.match?(phone)
         @errors << 'contact.phone_number must be in E.164 format'
       end
@@ -177,8 +179,12 @@ module ExternalLeads
       if @contact.nil?
         attrs = {
           name: @contact_params[:name],
-          phone_number: phone
+          phone_number: phone.presence
         }
+        # Phone-less lead: the source contact id becomes the identifier, so the contact
+        # counts as identified (contact lists, stale-contact cleanup).
+        identifier = external_identifier
+        attrs[:identifier] = identifier if phone.blank? && identifier && !Contact.exists?(identifier: identifier)
         # Only assign email if provided and not taken
         attrs[:email] = email if email && !Contact.exists?(email: email)
 
@@ -227,6 +233,11 @@ module ExternalLeads
       link&.record if link&.record.is_a?(Contact)
     end
 
+    def external_identifier
+      external_contact_id = @contact_params[:external_id].to_s.strip
+      external_contact_id.present? ? "#{@source}:#{external_contact_id}" : nil
+    end
+
     def link_external_contact!
       external_contact_id = @contact_params[:external_id].to_s.strip
       return if external_contact_id.blank?
@@ -252,7 +263,8 @@ module ExternalLeads
       return [] if name.split.size < 2
 
       sql = "regexp_replace(trim(translate(lower(contacts.name), '#{ACCENTS_FROM}', '#{ACCENTS_TO}')), '[^a-z ]+', ' ', 'g')"
-      @name_candidates ||= Contact.where.not(phone_number: [nil, ''])
+      # Identified contacts only: with a phone, or a phone-less lead carrying the source id.
+      @name_candidates ||= Contact.where("COALESCE(contacts.phone_number, '') <> '' OR COALESCE(contacts.identifier, '') <> ''")
                                   .where("regexp_replace(#{sql}, ' +', ' ', 'g') = ?", name)
                                   .limit(5).to_a
     end
