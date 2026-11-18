@@ -99,6 +99,54 @@ RSpec.describe ExternalLeads::SyncService do
     end
   end
 
+  describe 'phone-less leads (Instagram Direct)' do
+    let(:instagram_payload) do
+      payload = valid_payload.deep_dup
+      payload[:contact].delete(:phone_number)
+      payload[:contact].delete(:email)
+      payload[:contact][:external_id] = 'contact_136259'
+      payload
+    end
+
+    it 'rejects a lead without phone and without a source contact id' do
+      payload = instagram_payload.deep_dup
+      payload[:contact].delete(:external_id)
+      result = described_class.new(payload).perform
+      expect(result[:success]).to be(false)
+      expect(result[:errors]).to include('contact.phone_number is required')
+    end
+
+    it 'creates an identified contact keyed by the source contact id' do
+      result = described_class.new(instagram_payload).perform
+      expect(result[:success]).to be(true)
+      contact = Contact.find(result[:contact][:id])
+      expect(contact.phone_number).to be_blank
+      expect(contact.identifier).to eq('bitrix24:contact_136259')
+      expect(ExternalLink.find_by(source: 'bitrix24', external_type: 'contact', external_id: 'contact_136259').record).to eq(contact)
+    end
+
+    it 'reuses the same contact for another deal of the same source contact' do
+      first = described_class.new(instagram_payload).perform
+      second_payload = instagram_payload.deep_dup
+      second_payload[:external_id] = 'deal-202'
+      second = described_class.new(second_payload).perform
+      expect(second[:contact][:id]).to eq(first[:contact][:id])
+      expect(second[:contact][:match]).to eq('contact')
+    end
+
+    it 'links a later sale to the phone-less lead by name' do
+      lead = described_class.new(instagram_payload).perform
+      sale = valid_payload.deep_dup
+      sale[:external_id] = 'deal-sale-1'
+      sale[:contact] = { name: 'Cássia Rodrigues' }
+      sale[:deal] = sale[:deal].merge(kind: 'sale', stage_id: stage_won.id)
+      result = described_class.new(sale).perform
+      expect(result[:success]).to be(true)
+      expect(result[:contact][:id]).to eq(lead[:contact][:id])
+      expect(result[:contact][:match]).to eq('name')
+    end
+  end
+
   describe 'idempotency and upsert' do
     it 'creates contact, deal card and external links on first call' do
       result = described_class.new(valid_payload).perform
