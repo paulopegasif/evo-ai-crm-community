@@ -1,6 +1,15 @@
 class Whatsapp::SendOnWhatsappService < Base::SendOnChannelService
   include BaileysHelper
 
+  # The chat a message was sent to, as a WhatsApp JID. Edit / delete-for-everyone
+  # must target the exact chat the original went to, so reuse the send routing.
+  def self.target_jid_for(message)
+    target = new(message: message).send(:determine_target_number_for_sending).to_s.delete_prefix('+')
+    return nil if target.blank?
+
+    target.include?('@') ? target : "#{target}@s.whatsapp.net"
+  end
+
   private
 
   def channel_class
