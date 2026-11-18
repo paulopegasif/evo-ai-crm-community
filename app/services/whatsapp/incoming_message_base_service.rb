@@ -234,6 +234,25 @@ class Whatsapp::IncomingMessageBaseService
     true
   end
 
+  # Applies a WhatsApp edit to the stored message (either direction: the contact
+  # edited theirs, or we edited ours from the phone/API echo). Keeps the first
+  # original text in previous_content so the UI can show "edited".
+  def apply_message_edit_by_source_id(source_id, new_content)
+    return false if source_id.blank? || new_content.blank?
+
+    message = inbox.messages.find_by(source_id: source_id.to_s)
+    return false unless message
+    return true if message.content == new_content
+
+    message.update!(
+      content: new_content,
+      is_edited: true,
+      previous_content: message.previous_content.presence || message.content
+    )
+    Rails.logger.info "WhatsApp edit: updated message #{message.id} (source_id #{source_id})"
+    true
+  end
+
   def revoked_message_source_id(protocol_message)
     return if protocol_message.blank?
 

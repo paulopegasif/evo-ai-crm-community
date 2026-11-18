@@ -19,6 +19,40 @@ class Whatsapp::Providers::EvolutionGoService < Whatsapp::Providers::BaseService
     end
   end
 
+  # Delete-for-everyone on WhatsApp. Returns true when Evolution Go accepted it.
+  def delete_message(message)
+    chat = provider_chat_for(message)
+    return false if chat.blank?
+
+    response = HTTParty.post(
+      "#{api_base_path}/message/delete",
+      headers: instance_headers,
+      body: { chat: chat, messageId: message.source_id }.to_json,
+      timeout: 15
+    )
+    return true if response.success?
+
+    Rails.logger.warn "[Evolution Go] delete failed (#{response.code}) for source_id=#{message.source_id}: #{response.body.to_s.truncate(300)}"
+    false
+  end
+
+  # Edits a sent text message on WhatsApp. Raises with the provider error so the
+  # caller can show why it failed (e.g. outside WhatsApp's edit window).
+  def edit_message(message, new_content)
+    chat = provider_chat_for(message)
+    raise '[Evolution Go] message has no WhatsApp id/chat to edit' if chat.blank?
+
+    response = HTTParty.post(
+      "#{api_base_path}/message/edit",
+      headers: instance_headers,
+      body: { chat: chat, messageId: message.source_id, message: html_to_whatsapp(new_content) }.to_json,
+      timeout: 15
+    )
+    return true if response.success?
+
+    raise "[Evolution Go] HTTP #{response.code}: #{response.body.to_s.truncate(300)}"
+  end
+
   def send_template(phone_number, template_info)
     # Evolution Go API doesn't support template messages in the same way
     # For now, we'll send a regular text message
@@ -198,6 +232,12 @@ class Whatsapp::Providers::EvolutionGoService < Whatsapp::Providers::BaseService
   end
 
   private
+
+  def provider_chat_for(message)
+    return nil if message.source_id.blank?
+
+    Whatsapp::SendOnWhatsappService.target_jid_for(message)
+  end
 
   def api_base_path
     api_url = whatsapp_channel.provider_config['api_url'].presence || GlobalConfigService.load('EVOLUTION_GO_API_URL', '').to_s.strip
