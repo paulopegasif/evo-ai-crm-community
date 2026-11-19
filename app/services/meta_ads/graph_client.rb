@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-# Minimal read-only client for the Meta Graph / Marketing API.
+# Minimal client for the Meta Graph / Marketing API (reads, plus the few writes the
+# Conversions API setup needs).
 # https://developers.facebook.com/docs/marketing-api/reference
 class MetaAds::GraphClient
   class Error < StandardError
@@ -47,6 +48,10 @@ class MetaAds::GraphClient
     request("#{BASE_URL}/#{@version}/#{path.to_s.delete_prefix('/')}", params.merge(auth_params))
   end
 
+  def post(path, params = {})
+    request("#{BASE_URL}/#{@version}/#{path.to_s.delete_prefix('/')}", params.merge(auth_params), method: :post)
+  end
+
   # Follows `paging.next` until the end, yielding each item.
   def each_page_item(path, params = {}, &block)
     return enum_for(:each_page_item, path, params) unless block
@@ -70,8 +75,12 @@ class MetaAds::GraphClient
     params
   end
 
-  def request(url, query)
-    response = HTTParty.get(url, query: query, timeout: TIMEOUT)
+  def request(url, query, method: :get)
+    response = if method == :post
+                 HTTParty.post(url, body: query, timeout: TIMEOUT)
+               else
+                 HTTParty.get(url, query: query, timeout: TIMEOUT)
+               end
     body = parse(response)
     raise_error(body['error'], response.code) if body['error'] || !response.success?
 
