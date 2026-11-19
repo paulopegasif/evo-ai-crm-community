@@ -7,7 +7,7 @@ class Api::V1::Integrations::HooksController < Api::V1::BaseController
   })
 
   # Apps whose settings carry credentials validated by a dedicated controller.
-  DEDICATED_APPS = %w[meta_ads].freeze
+  DEDICATED_APPS = %w[meta_ads meta_conversions].freeze
 
   before_action :fetch_hook, except: [:create]
   before_action :reject_dedicated_app, only: [:create, :update]

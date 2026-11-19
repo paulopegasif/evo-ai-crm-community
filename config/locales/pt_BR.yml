@@ -210,6 +210,10 @@ pt_BR:
     online:
       delete: '%{contact_name} está Online, por favor, tente novamente mais tarde'
   integration_apps:
+    meta_conversions:
+      name: 'Conversões da Meta'
+      short_description: 'Envie leads, leads qualificados e vendas de volta para a Meta e otimize os anúncios de WhatsApp.'
+      description: 'Informe à Meta, pela API de Conversões, cada lead, lead qualificado e venda vindos dos anúncios de clique para o WhatsApp, para que as campanhas otimizem para os leads que realmente viram clientes.'
     meta_ads:
       name: 'Meta Ads'
       short_description: 'Campanhas, investimento e desempenho de leads da sua conta de anúncios da Meta.'
