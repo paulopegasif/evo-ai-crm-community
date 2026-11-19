@@ -50,6 +50,10 @@ Rails.application.routes.draw do
           post :test, action: :test_connection
           post :sync
         end
+        resource :meta_conversions, only: [:show, :update, :destroy], controller: 'meta_conversions' do
+          post :test, action: :test_connection
+          post :test_event
+        end
         namespace :google_calendar do
           get 'credentials', to: 'credentials#show'
         end

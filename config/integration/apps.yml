@@ -42,6 +42,38 @@ meta_ads:
   settings_form_schema: []
   visible_properties: ["ad_account_id", "account_name", "connection_status"]
 
+meta_conversions:
+  id: meta_conversions
+  logo: meta_ads.png
+  i18n_key: meta_conversions
+  action: /settings/integrations/meta_conversions
+  hook_type: account
+  allow_multiple_hooks: false
+  # Managed only through Api::V1::Integrations::MetaConversionsController (the token
+  # is validated against the WhatsApp Business Account and stored encrypted).
+  settings_json_schema:
+    {
+      "type": "object",
+      "properties":
+        {
+          "enabled": { "type": "boolean" },
+          "waba_id": { "type": "string" },
+          "waba_name": { "type": ["string", "null"] },
+          "page_id": { "type": ["string", "null"] },
+          "dataset_id": { "type": ["string", "null"] },
+          "token_source": { "type": "string" },
+          "access_token_encrypted": { "type": ["string", "null"] },
+          "token_hint": { "type": ["string", "null"] },
+          "test_event_code": { "type": ["string", "null"] },
+          "event_names": { "type": "object" },
+          "connection_status": { "type": "string" },
+          "last_error": { "type": ["object", "null"] },
+          "connected_at": { "type": ["string", "null"] }
+        },
+      "additionalProperties": true
+    }
+  settings_form_schema: []
+  visible_properties: ["waba_id", "waba_name", "connection_status"]
 google_calendar:
   id: google_calendar
   logo: google_calendar.png

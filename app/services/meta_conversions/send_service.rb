@@ -3,9 +3,6 @@
 # Sends one event to the Conversions API and records it on the contact
 # (additional_attributes.meta_capi.<key>) so it is never sent twice.
 class MetaConversions::SendService
-  BASE_URL = 'https://graph.facebook.com'
-  TIMEOUT = 15
-
   class RetryableError < StandardError; end
 
   def initialize(contact:, event:, key:, event_time:, value: nil)
@@ -36,20 +33,20 @@ class MetaConversions::SendService
       user_data: identity.user_data
     }
     event[:custom_data] = { currency: MetaConversions::Config.currency, value: @value.to_f.round(2) } if @value.present?
-    { data: [event], test_event_code: MetaConversions::Config.test_event_code }.compact
+    event
   end
 
   private
 
   def post(identity)
-    response = HTTParty.post(url, body: payload(identity).to_json, headers: headers, timeout: TIMEOUT)
+    response = MetaConversions::Api.post_events([payload(identity)])
     raise RetryableError, "HTTP #{response.code}: #{response.body.to_s.first(300)}" if response.code == 429 || response.code >= 500
 
     response
   end
 
   def handle(response)
-    body = parse(response.body)
+    body = MetaConversions::Api.parse(response.body)
     if response.success?
       record('sent_at' => Time.current.iso8601, 'event' => event_name, 'events_received' => body['events_received'])
       return :sent
@@ -64,21 +61,6 @@ class MetaConversions::SendService
 
   def event_name
     MetaConversions::Config.event_name(@event)
-  end
-
-  def url
-    "#{BASE_URL}/#{MetaConversions::Config.api_version}/#{MetaConversions::Config.dataset_id}/events"
-  end
-
-  def headers
-    { 'Content-Type' => 'application/json', 'Authorization' => "Bearer #{MetaConversions::Config.access_token}" }
-  end
-
-  def parse(raw)
-    parsed = JSON.parse(raw.to_s)
-    parsed.is_a?(Hash) ? parsed : {}
-  rescue JSON::ParserError
-    {}
   end
 
   def record(entry)

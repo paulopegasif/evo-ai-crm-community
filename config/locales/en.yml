@@ -226,6 +226,10 @@ en:
     online:
       delete: '%{contact_name} is Online, please try again later'
   integration_apps:
+    meta_conversions:
+      name: 'Meta Conversions'
+      short_description: 'Send leads, qualified leads and sales back to Meta to optimize Click-to-WhatsApp ads.'
+      description: 'Report each lead, qualified lead and sale from your Click-to-WhatsApp ads back to Meta through the Conversions API, so campaigns can optimize for the leads that actually turn into patients.'
     meta_ads:
       name: 'Meta Ads'
       short_description: 'Campaign, spend and lead performance from your Meta ad account.'
