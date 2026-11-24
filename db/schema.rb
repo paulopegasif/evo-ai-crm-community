@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_24_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1055,6 +1055,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_29_160000) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.jsonb "custom_fields", default: {}, null: false
+    t.boolean "counts_as_qualified", default: false, null: false
     t.index ["custom_fields"], name: "index_pipeline_stages_on_custom_fields", using: :gin
     t.index ["pipeline_id", "position"], name: "index_pipeline_stages_on_pipeline_id_and_position", unique: true
     t.index ["pipeline_id"], name: "index_pipeline_stages_on_pipeline_id"

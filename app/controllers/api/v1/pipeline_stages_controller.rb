@@ -162,6 +162,7 @@ class Api::V1::PipelineStagesController < Api::V1::BaseController
       :name,
       :color,
       :stage_type,
+      :counts_as_qualified,
       custom_fields: {}
     )
 
