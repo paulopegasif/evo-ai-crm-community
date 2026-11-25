@@ -265,6 +265,21 @@ Rails.application.routes.draw do
         get :runs, on: :member
       end
 
+      # Painel do Dia (pequenos negócios): vendas, metas, painel e resumo diário
+      resources :sales, only: [:index, :create, :update], controller: 'sales' do
+        post :cancel, on: :member
+        get :sellers, on: :collection
+      end
+      resources :sales_goals, only: [:index, :destroy], controller: 'sales_goals'
+      put 'sales_goals', to: 'sales_goals#upsert'
+      get 'daily_panel', to: 'daily_panel#show'
+      get 'daily_panel/preferences', to: 'daily_panel#preferences'
+      patch 'daily_panel/preferences', to: 'daily_panel#update_preferences'
+      patch 'daily_panel/settings', to: 'daily_panel#update_settings'
+      get 'daily_summary_settings', to: 'daily_summary_settings#show'
+      put 'daily_summary_settings', to: 'daily_summary_settings#update'
+      post 'daily_summary_settings/test', to: 'daily_summary_settings#test'
+
       # Product Catalog (EVO-1109)
       resources :products, only: [:index, :create, :show, :update, :destroy], controller: 'products' do
         # Bulk import endpoint (EVO-1555 S1)

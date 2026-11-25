@@ -88,3 +88,9 @@ automation_rule_runs_cleanup_job:
   cron: '45 3 * * *'
   class: 'AutomationRuleRunsCleanupJob'
   queue: low
+
+# Painel do Dia: resumo diário por WhatsApp (o job decide se chegou o horário configurado)
+daily_summary_scheduler_job:
+  cron: '*/5 * * * *'
+  class: 'DailySummary::SchedulerJob'
+  queue: scheduled_jobs

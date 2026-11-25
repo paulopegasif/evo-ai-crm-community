@@ -52,7 +52,17 @@ RSpec.describe 'API v1 mutating actions permission guard' do
       %w[create update destroy bulk_move move_conversation move_to_stage update_conversation update_custom_fields],
     # POST-shaped reads inside the new-conversation flow.
     'api/v1/contact_inboxes' => %w[filter],
-    'api/v1/contacts/contact_inboxes' => %w[create]
+    'api/v1/contacts/contact_inboxes' => %w[create],
+    # Painel do Dia: role-gated in the controller (PainelDoDiaAccess) instead of
+    # evo-auth permission keys — admins change any sale, other users only the
+    # sales they registered (403 otherwise); agents always register as themselves.
+    'api/v1/sales' => %w[create update cancel],
+    # Admin-only (require_admin! → 403 for non-admins).
+    'api/v1/sales_goals' => %w[upsert destroy],
+    'api/v1/daily_summary_settings' => %w[update test],
+    # update_preferences is self-service (caller's own ui_settings);
+    # update_settings is admin-only (require_admin!).
+    'api/v1/daily_panel' => %w[update_preferences update_settings]
   }.freeze
 
   # Routes whose controller class does not exist: the request 500s on a
