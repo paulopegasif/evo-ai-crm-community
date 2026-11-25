@@ -1,0 +1,118 @@
+# Frases do dia do Painel do Dia.
+#
+# Regras de curadoria:
+# - motivacao/negocios: autores em domínio público no Brasil (falecidos há mais de 70 anos),
+#   provérbios populares ou textos autorais da Elph. Traduções feitas por nós.
+# - biblia: o texto PRECISA ser conferido, versículo a versículo, com uma edição da Bíblia em
+#   domínio público (ex.: tradução de João Ferreira de Almeida em edição anterior a 1950) antes
+#   de ir para produção. Não usar texto de edições protegidas (ARA, ARC atual, ACF, NVI, NTLH...).
+# - Uma frase por item: text + author (ou ref, para versículos). Frases curtas (até ~160 caracteres).
+motivacao:
+  - { text: "Grandes coisas não são feitas por impulso, mas por uma série de pequenas coisas reunidas.", author: "Vincent van Gogh" }
+  - { text: "Não é porque as coisas são difíceis que não ousamos; é porque não ousamos que elas são difíceis.", author: "Sêneca" }
+  - { text: "A sorte favorece os audazes.", author: "Virgílio" }
+  - { text: "Comece fazendo o que é necessário, depois o que é possível, e de repente você estará fazendo o impossível.", author: "Atribuída a Francisco de Assis" }
+  - { text: "Nossa maior glória não está em nunca cair, mas em levantar cada vez que caímos.", author: "Oliver Goldsmith" }
+  - { text: "Gênio é um por cento de inspiração e noventa e nove por cento de transpiração.", author: "Thomas Edison" }
+  - { text: "Não fracassei. Apenas descobri dez mil maneiras que não funcionam.", author: "Thomas Edison" }
+  - { text: "Faça o que puder, com o que tiver, onde estiver.", author: "Theodore Roosevelt" }
+  - { text: "O sucesso é ir de fracasso em fracasso sem perder o entusiasmo.", author: "Provérbio popular" }
+  - { text: "Devagar se vai ao longe.", author: "Provérbio popular" }
+  - { text: "Água mole em pedra dura tanto bate até que fura.", author: "Provérbio popular" }
+  - { text: "Quem acredita sempre alcança.", author: "Provérbio popular" }
+  - { text: "A felicidade da sua vida depende da qualidade dos seus pensamentos.", author: "Marco Aurélio" }
+  - { text: "Você tem poder sobre sua mente, não sobre os acontecimentos. Perceba isso e encontrará força.", author: "Marco Aurélio" }
+  - { text: "Não é que tenhamos pouco tempo; é que desperdiçamos muito.", author: "Sêneca" }
+  - { text: "Enquanto adiamos, a vida passa.", author: "Sêneca" }
+  - { text: "A paciência é amarga, mas seu fruto é doce.", author: "Jean-Jacques Rousseau" }
+  - { text: "Tudo o que um homem pode imaginar, outros homens poderão realizar.", author: "Júlio Verne" }
+  - { text: "Pedras no caminho? Guardo todas. Um dia vou construir um castelo.", author: "Provérbio popular" }
+  - { text: "Quem não sabe o que procura não entende o que encontra.", author: "Claude Bernard" }
+  - { text: "A coragem não é a ausência do medo, mas a decisão de que algo é mais importante que ele.", author: "Provérbio popular" }
+  - { text: "Hoje é dia de fazer o que ontem você prometeu para amanhã.", author: "Elph" }
+  - { text: "Cada cliente bem atendido hoje é uma indicação amanhã.", author: "Elph" }
+  - { text: "Um passo por dia ainda é andar para frente.", author: "Elph" }
+  - { text: "O dia rende quando a primeira tarefa é a mais importante.", author: "Elph" }
+  - { text: "Quem tem tempo não espere por tempo.", author: "Provérbio popular" }
+  - { text: "A união faz a força.", author: "Provérbio popular" }
+  - { text: "Não espere o momento perfeito. Pegue o momento e torne-o perfeito.", author: "Provérbio popular" }
+  - { text: "Quem planta colhe.", author: "Provérbio popular" }
+  - { text: "Conhece-te a ti mesmo.", author: "Inscrição do templo de Delfos" }
+  - { text: "A disciplina é a ponte entre metas e realizações.", author: "Provérbio popular" }
+  - { text: "O começo é a parte mais importante do trabalho.", author: "Platão" }
+  - { text: "Nenhum vento sopra a favor de quem não sabe para onde ir.", author: "Sêneca" }
+  - { text: "Tudo vale a pena se a alma não é pequena.", author: "Fernando Pessoa" }
+  - { text: "O homem que move montanhas começa carregando pequenas pedras.", author: "Provérbio chinês" }
+  - { text: "A jornada de mil léguas começa com um único passo.", author: "Lao-Tsé" }
+  - { text: "Feito é melhor que perfeito.", author: "Provérbio popular" }
+negocios:
+  - { text: "Tempo é dinheiro.", author: "Benjamin Franklin" }
+  - { text: "Um centavo poupado é um centavo ganho.", author: "Benjamin Franklin" }
+  - { text: "Ao falhar em se preparar, você se prepara para falhar.", author: "Benjamin Franklin" }
+  - { text: "Investir em conhecimento rende sempre os melhores juros.", author: "Benjamin Franklin" }
+  - { text: "Pequenas despesas, com o tempo, afundam grandes navios.", author: "Benjamin Franklin" }
+  - { text: "Bem feito é melhor do que bem dito.", author: "Benjamin Franklin" }
+  - { text: "Qualidade significa fazer certo quando ninguém está olhando.", author: "Atribuída a Henry Ford" }
+  - { text: "Juntar-se é um começo, manter-se juntos é progresso, trabalhar juntos é sucesso.", author: "Henry Ford" }
+  - { text: "Se você pensa que pode ou se pensa que não pode, de qualquer forma você está certo.", author: "Henry Ford" }
+  - { text: "O fracasso é a oportunidade de começar de novo com mais inteligência.", author: "Henry Ford" }
+  - { text: "Não encontre defeitos, encontre soluções.", author: "Henry Ford" }
+  - { text: "A oportunidade é perdida pela maioria das pessoas porque vem vestida de macacão e parece trabalho.", author: "Thomas Edison" }
+  - { text: "Há uma maneira de fazer melhor. Encontre-a.", author: "Thomas Edison" }
+  - { text: "O cliente satisfeito é a melhor estratégia de negócios.", author: "Provérbio popular" }
+  - { text: "Quem não é visto não é lembrado.", author: "Provérbio popular" }
+  - { text: "O olho do dono é que engorda o gado.", author: "Provérbio popular" }
+  - { text: "Promessa é dívida.", author: "Provérbio popular" }
+  - { text: "De grão em grão, a galinha enche o papo.", author: "Provérbio popular" }
+  - { text: "Quem não arrisca não petisca.", author: "Provérbio popular" }
+  - { text: "O que não é medido não é gerenciado.", author: "Provérbio da administração" }
+  - { text: "Não há vento favorável para quem não sabe aonde vai.", author: "Sêneca" }
+  - { text: "Dê-me seis horas para cortar uma árvore e passarei as quatro primeiras afiando o machado.", author: "Atribuída a Abraham Lincoln" }
+  - { text: "A melhor maneira de prever o futuro é criá-lo.", author: "Provérbio da administração" }
+  - { text: "Faça cada coisa no seu tempo.", author: "Provérbio popular" }
+  - { text: "Lead que espera, esfria. Responda rápido.", author: "Elph" }
+  - { text: "Proposta parada é venda esquecida. Faça o follow-up hoje.", author: "Elph" }
+  - { text: "Venda não termina no pagamento: começa ali o próximo negócio.", author: "Elph" }
+  - { text: "Quem anota, lembra. Quem lembra, vende de novo.", author: "Elph" }
+  - { text: "Meta dividida por dia é meta que dá para bater.", author: "Elph" }
+  - { text: "Todo 'não' de hoje ensina o 'sim' de amanhã.", author: "Elph" }
+  - { text: "Cliente bem lembrado volta. Cliente esquecido vai para o concorrente.", author: "Elph" }
+  - { text: "Planejar o dia é ganhar o dia.", author: "Elph" }
+  - { text: "Prioridade é dizer não ao que não importa hoje.", author: "Elph" }
+  - { text: "Preço é o que você paga; valor é o que você leva.", author: "Provérbio popular" }
+  - { text: "A simplicidade é o último grau de sofisticação.", author: "Atribuída a Leonardo da Vinci" }
+  - { text: "Trabalhe enquanto eles dormem, estude enquanto eles se divertem.", author: "Provérbio popular" }
+  - { text: "Quem tem um porquê enfrenta qualquer como.", author: "Friedrich Nietzsche" }
+  - { text: "A pressa é inimiga da perfeição.", author: "Provérbio popular" }
+  - { text: "Mais vale um pássaro na mão do que dois voando.", author: "Provérbio popular" }
+biblia:
+  - { text: "Tudo posso naquele que me fortalece.", ref: "Filipenses 4:13" }
+  - { text: "Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref: "Salmos 37:5" }
+  - { text: "Confia ao Senhor as tuas obras, e teus pensamentos serão estabelecidos.", ref: "Provérbios 16:3" }
+  - { text: "O Senhor é o meu pastor; nada me faltará.", ref: "Salmos 23:1" }
+  - { text: "Tudo tem o seu tempo determinado, e há tempo para todo propósito debaixo do céu.", ref: "Eclesiastes 3:1" }
+  - { text: "Esforça-te e tem bom ânimo; não temas, nem te espantes.", ref: "Josué 1:9" }
+  - { text: "Tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor.", ref: "Colossenses 3:23" }
+  - { text: "Não te deixes vencer do mal, mas vence o mal com o bem.", ref: "Romanos 12:21" }
+  - { text: "Pedi, e dar-se-vos-á; buscai, e achareis; batei, e abrir-se-vos-á.", ref: "Mateus 7:7" }
+  - { text: "A resposta branda desvia o furor.", ref: "Provérbios 15:1" }
+  - { text: "Os planos do diligente tendem à abundância.", ref: "Provérbios 21:5" }
+  - { text: "Viste um homem diligente na sua obra? Perante reis será posto.", ref: "Provérbios 22:29" }
+  - { text: "O que lavra a sua terra se fartará de pão.", ref: "Provérbios 12:11" }
+  - { text: "Melhor é o fim das coisas do que o princípio delas.", ref: "Eclesiastes 7:8" }
+  - { text: "Não andeis ansiosos de coisa alguma.", ref: "Filipenses 4:6" }
+  - { text: "Buscai primeiro o Reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref: "Mateus 6:33" }
+  - { text: "Não vos canseis de fazer o bem.", ref: "2 Tessalonicenses 3:13" }
+  - { text: "Os que esperam no Senhor renovarão as suas forças.", ref: "Isaías 40:31" }
+  - { text: "Alegrai-vos na esperança, sede pacientes na tribulação, perseverai na oração.", ref: "Romanos 12:12" }
+  - { text: "Onde não há conselho, os projetos falham, mas com muitos conselheiros se estabelecem.", ref: "Provérbios 15:22" }
+  - { text: "O coração do homem planeja o seu caminho, mas o Senhor lhe dirige os passos.", ref: "Provérbios 16:9" }
+  - { text: "Mais vale o bom nome do que as muitas riquezas.", ref: "Provérbios 22:1" }
+  - { text: "Instruí o menino no caminho em que deve andar.", ref: "Provérbios 22:6" }
+  - { text: "O ferro com o ferro se afia, e o homem afia o rosto do seu amigo.", ref: "Provérbios 27:17" }
+  - { text: "Mais bem-aventurada coisa é dar do que receber.", ref: "Atos 20:35" }
+  - { text: "Tudo o que vós quereis que os homens vos façam, fazei-o também vós a eles.", ref: "Mateus 7:12" }
+  - { text: "Quem é fiel no pouco também é fiel no muito.", ref: "Lucas 16:10" }
+  - { text: "Melhor é serem dois do que um.", ref: "Eclesiastes 4:9" }
+  - { text: "Este é o dia que o Senhor fez; regozijemo-nos e alegremo-nos nele.", ref: "Salmos 118:24" }
+  - { text: "Lança o teu pão sobre as águas, porque depois de muitos dias o acharás.", ref: "Eclesiastes 11:1" }

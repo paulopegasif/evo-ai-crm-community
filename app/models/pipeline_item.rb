@@ -80,6 +80,9 @@ class PipelineItem < ApplicationRecord
   after_update :publish_pipeline_item_updated
   after_update :publish_pipeline_item_completed, if: :saved_change_to_completed_at?
   after_destroy :publish_pipeline_item_deleted
+  # Painel do Dia: card ganho em pipeline de vendas gera/cancela a venda automática.
+  after_create :sync_sale_with_stage
+  after_update :sync_sale_with_stage, if: :saved_change_to_pipeline_stage_id?
 
   scope :in_stage, ->(stage) { where(pipeline_stage: stage) }
   scope :active, -> { where(completed_at: nil) }
@@ -254,6 +257,11 @@ class PipelineItem < ApplicationRecord
   end
 
   private
+
+  def sync_sale_with_stage
+    previous = previously_new_record? ? nil : pipeline_stage_id_before_last_save
+    Sales::PipelineSync.call(self, previous_stage_id: previous)
+  end
 
   def validate_custom_fields_structure
     return if custom_fields.blank?

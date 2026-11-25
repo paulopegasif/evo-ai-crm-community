@@ -340,7 +340,7 @@ module Dashboard
     end
 
     def scoped_conversations
-      @scoped_conversations ||= @filters.conversation_scope(Conversation.all)
+      @scoped_conversations ||= DailySummary::Exclusion.conversations(@filters.conversation_scope(Conversation.all))
     end
 
     def scoped_reporting_events
@@ -348,7 +348,9 @@ module Dashboard
     end
 
     def scoped_conversations_current
-      @scoped_conversations_current ||= @filters.conversation_scope(Conversation.all, apply_time_range: false)
+      @scoped_conversations_current ||= DailySummary::Exclusion.conversations(
+        @filters.conversation_scope(Conversation.all, apply_time_range: false)
+      )
     end
 
     def scoped_pipeline_items
@@ -361,6 +363,7 @@ module Dashboard
 
     def scoped_messages
       @scoped_messages ||= @filters.messages_scope(Message.all)
+                                  .where.not(conversation_id: DailySummary::Exclusion.excluded_conversation_ids)
     end
 
     def scoped_csat_responses

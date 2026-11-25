@@ -121,23 +121,13 @@ module ScheduledActions
       # Validate source_id was generated/found
       return { success: false, error: "Could not determine contact identifier for #{channel}" } if source_id.blank?
 
-      # Get or create contact_inbox
-      contact_inbox = find_or_create_contact_inbox(inbox, source_id)
-      return contact_inbox if contact_inbox.is_a?(Hash) && contact_inbox[:success] == false
+      result = Messaging::OutboundToContactService.new(
+        inbox: inbox, contact: scheduled_action.contact, source_id: source_id,
+        content: message, sender_id: scheduled_action.created_by
+      ).call
+      return { success: false, error: result.error } unless result.success?
 
-      # Get or create conversation
-      conversation = find_or_create_conversation(inbox, contact_inbox)
-      return conversation if conversation.is_a?(Hash) && conversation[:success] == false
-
-      # Create message
-      conversation.messages.create!(
-        content: message,
-        message_type: :outgoing,
-        sender_id: scheduled_action.created_by,
-        inbox_id: inbox.id,
-        conversation_id: conversation.id
-      )
-
+      conversation = result.conversation
       { success: true, data: { message: message, conversation_id: conversation.id } }
     end
 
@@ -208,41 +198,7 @@ module ScheduledActions
       SecureRandom.uuid
     end
 
-    # Find or create contact_inbox for a channel
-    def find_or_create_contact_inbox(inbox, source_id)
-      contact_inbox = ContactInbox.find_by(
-        inbox_id: inbox.id,
-        source_id: source_id
-      )
 
-      unless contact_inbox
-        contact_inbox = ContactInbox.create!(
-          inbox_id: inbox.id,
-          contact_id: scheduled_action.contact_id,
-          source_id: source_id
-        )
-      end
-
-      contact_inbox
-    rescue ActiveRecord::RecordInvalid => e
-      { success: false, error: "Failed to create contact inbox: #{e.message}" }
-    end
-
-    # Find or create conversation for a contact in an inbox
-    def find_or_create_conversation(inbox, contact_inbox)
-      conversation = inbox.conversations.find_by(contact_id: scheduled_action.contact_id)
-
-      unless conversation
-        conversation = inbox.conversations.create!(
-          contact_id: scheduled_action.contact_id,
-          contact_inbox_id: contact_inbox.id
-        )
-      end
-
-      conversation
-    rescue ActiveRecord::RecordInvalid => e
-      { success: false, error: "Failed to create conversation: #{e.message}" }
-    end
 
     # Send Email via send_message with email channel
     def execute_send_message_email

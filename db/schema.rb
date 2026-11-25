@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_25_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1090,6 +1090,39 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["key"], name: "index_runtime_configs_on_key", unique: true
+  end
+
+  create_table "sales", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.datetime "sold_at", null: false
+    t.string "status", default: "active", null: false
+    t.string "source", default: "manual", null: false
+    t.boolean "missing_amount", default: false, null: false
+    t.uuid "seller_id"
+    t.uuid "created_by_id"
+    t.uuid "contact_id"
+    t.uuid "conversation_id"
+    t.uuid "pipeline_item_id"
+    t.uuid "product_id"
+    t.text "notes"
+    t.datetime "cancelled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["contact_id"], name: "index_sales_on_contact_id"
+    t.index ["conversation_id"], name: "index_sales_on_conversation_id"
+    t.index ["pipeline_item_id"], name: "idx_sales_one_active_per_pipeline_item", unique: true, where: "(((status)::text = 'active'::text) AND (pipeline_item_id IS NOT NULL))"
+    t.index ["seller_id", "sold_at"], name: "index_sales_on_seller_id_and_sold_at"
+    t.index ["status", "sold_at"], name: "index_sales_on_status_and_sold_at"
+  end
+
+  create_table "sales_goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.date "month", null: false
+    t.uuid "user_id"
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["month", "user_id"], name: "idx_sales_goals_month_user", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["month"], name: "idx_sales_goals_month_general", unique: true, where: "(user_id IS NULL)"
   end
 
   create_table "scheduled_action_execution_logs", force: :cascade do |t|
