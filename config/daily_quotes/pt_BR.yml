@@ -2,11 +2,16 @@
 #
 # Regras de curadoria:
 # - motivacao/negocios: autores em domínio público no Brasil (falecidos há mais de 70 anos),
-#   provérbios populares ou textos autorais da Elph. Traduções feitas por nós.
-# - biblia: o texto PRECISA ser conferido, versículo a versículo, com uma edição da Bíblia em
-#   domínio público (ex.: tradução de João Ferreira de Almeida em edição anterior a 1950) antes
-#   de ir para produção. Não usar texto de edições protegidas (ARA, ARC atual, ACF, NVI, NTLH...).
-# - Uma frase por item: text + author (ou ref, para versículos). Frases curtas (até ~160 caracteres).
+#   provérbios populares ou textos próprios ("Dica do dia"). Traduções feitas por nós.
+#   Quando a autoria é incerta, usar "Atribuída a ...". Não usar frases de autores modernos
+#   disfarçadas de provérbio.
+# - biblia: textos da Bíblia Livre (BLIVRE), Copyright © Diego Santos, Mario Sérgio e Marco Teles,
+#   http://sites.google.com/site/biblialivre/ - fevereiro de 2018. Licença Creative Commons
+#   Atribuição 4.0 Brasil (http://creativecommons.org/licenses/by/4.0/br/). Fonte: eBible.org
+#   (porbr2018). Adaptação nossa: removidos os colchetes de palavras acrescentadas pelos
+#   tradutores e os títulos de salmos; o texto não foi alterado além disso. Cada versículo
+#   exibe a sigla BLIVRE junto da referência.
+# - Uma frase por item: text + author (ou ref, para versículos). Frases curtas (até ~170 caracteres).
 motivacao:
   - { text: "Grandes coisas não são feitas por impulso, mas por uma série de pequenas coisas reunidas.", author: "Vincent van Gogh" }
   - { text: "Não é porque as coisas são difíceis que não ousamos; é porque não ousamos que elas são difíceis.", author: "Sêneca" }
@@ -16,7 +21,6 @@ motivacao:
   - { text: "Gênio é um por cento de inspiração e noventa e nove por cento de transpiração.", author: "Thomas Edison" }
   - { text: "Não fracassei. Apenas descobri dez mil maneiras que não funcionam.", author: "Thomas Edison" }
   - { text: "Faça o que puder, com o que tiver, onde estiver.", author: "Theodore Roosevelt" }
-  - { text: "O sucesso é ir de fracasso em fracasso sem perder o entusiasmo.", author: "Provérbio popular" }
   - { text: "Devagar se vai ao longe.", author: "Provérbio popular" }
   - { text: "Água mole em pedra dura tanto bate até que fura.", author: "Provérbio popular" }
   - { text: "Quem acredita sempre alcança.", author: "Provérbio popular" }
@@ -26,25 +30,67 @@ motivacao:
   - { text: "Enquanto adiamos, a vida passa.", author: "Sêneca" }
   - { text: "A paciência é amarga, mas seu fruto é doce.", author: "Jean-Jacques Rousseau" }
   - { text: "Tudo o que um homem pode imaginar, outros homens poderão realizar.", author: "Júlio Verne" }
-  - { text: "Pedras no caminho? Guardo todas. Um dia vou construir um castelo.", author: "Provérbio popular" }
   - { text: "Quem não sabe o que procura não entende o que encontra.", author: "Claude Bernard" }
-  - { text: "A coragem não é a ausência do medo, mas a decisão de que algo é mais importante que ele.", author: "Provérbio popular" }
-  - { text: "Hoje é dia de fazer o que ontem você prometeu para amanhã.", author: "Elph" }
-  - { text: "Cada cliente bem atendido hoje é uma indicação amanhã.", author: "Elph" }
-  - { text: "Um passo por dia ainda é andar para frente.", author: "Elph" }
-  - { text: "O dia rende quando a primeira tarefa é a mais importante.", author: "Elph" }
+  - { text: "Hoje é dia de fazer o que ontem você prometeu para amanhã.", author: "Dica do dia" }
+  - { text: "Cada cliente bem atendido hoje é uma indicação amanhã.", author: "Dica do dia" }
+  - { text: "Um passo por dia ainda é andar para frente.", author: "Dica do dia" }
+  - { text: "O dia rende quando a primeira tarefa é a mais importante.", author: "Dica do dia" }
   - { text: "Quem tem tempo não espere por tempo.", author: "Provérbio popular" }
   - { text: "A união faz a força.", author: "Provérbio popular" }
-  - { text: "Não espere o momento perfeito. Pegue o momento e torne-o perfeito.", author: "Provérbio popular" }
   - { text: "Quem planta colhe.", author: "Provérbio popular" }
   - { text: "Conhece-te a ti mesmo.", author: "Inscrição do templo de Delfos" }
-  - { text: "A disciplina é a ponte entre metas e realizações.", author: "Provérbio popular" }
   - { text: "O começo é a parte mais importante do trabalho.", author: "Platão" }
   - { text: "Nenhum vento sopra a favor de quem não sabe para onde ir.", author: "Sêneca" }
   - { text: "Tudo vale a pena se a alma não é pequena.", author: "Fernando Pessoa" }
   - { text: "O homem que move montanhas começa carregando pequenas pedras.", author: "Provérbio chinês" }
   - { text: "A jornada de mil léguas começa com um único passo.", author: "Lao-Tsé" }
-  - { text: "Feito é melhor que perfeito.", author: "Provérbio popular" }
+  - { text: "Feito é melhor que perfeito.", author: "Dica do dia" }
+  - { text: "Às vezes, até viver é um ato de coragem.", author: "Sêneca" }
+  - { text: "Começa já a viver, e conta cada dia como uma vida inteira.", author: "Sêneca" }
+  - { text: "A sorte é o que acontece quando a preparação encontra a oportunidade.", author: "Atribuída a Sêneca" }
+  - { text: "Não percas mais tempo discutindo como deve ser um homem bom. Sê um.", author: "Marco Aurélio" }
+  - { text: "Se não é certo, não faças; se não é verdade, não digas.", author: "Marco Aurélio" }
+  - { text: "Ao amanhecer, quando custar a levantar, pensa: levanto-me para fazer o meu trabalho.", author: "Marco Aurélio" }
+  - { text: "Não são as coisas que nos perturbam, mas a opinião que temos delas.", author: "Epicteto" }
+  - { text: "Primeiro diga a si mesmo o que você quer ser; depois faça o que precisa ser feito.", author: "Epicteto" }
+  - { text: "Nenhuma grande coisa é criada de repente.", author: "Epicteto" }
+  - { text: "Não importa quão devagar você vá, desde que não pare.", author: "Atribuída a Confúcio" }
+  - { text: "Bem começado é meio feito.", author: "Aristóteles" }
+  - { text: "Nada de grandioso foi conquistado sem entusiasmo.", author: "Ralph Waldo Emerson" }
+  - { text: "Faça aquilo que você teme, e o fim do medo é certo.", author: "Ralph Waldo Emerson" }
+  - { text: "Siga com confiança na direção dos seus sonhos.", author: "Henry David Thoreau" }
+  - { text: "Saber não basta; é preciso aplicar. Querer não basta; é preciso fazer.", author: "Goethe" }
+  - { text: "O que quer que você possa fazer, ou sonhe que pode, comece.", author: "Atribuída a Goethe" }
+  - { text: "O tempo dura o bastante para quem sabe aproveitá-lo.", author: "Leonardo da Vinci" }
+  - { text: "Seja o que for que você for, seja bom nisso.", author: "Atribuída a Abraham Lincoln" }
+  - { text: "O segredo de progredir é começar.", author: "Atribuída a Mark Twain" }
+  - { text: "Nada é mais poderoso do que uma ideia cujo tempo chegou.", author: "Atribuída a Victor Hugo" }
+  - { text: "O trabalho persistente vence tudo.", author: "Virgílio" }
+  - { text: "Aproveite o dia.", author: "Horácio" }
+  - { text: "Quem começou já fez metade: ouse saber.", author: "Horácio" }
+  - { text: "Sê paciente e firme; um dia essa dor te será útil.", author: "Ovídio" }
+  - { text: "A prática é a melhor das mestras.", author: "Publílio Siro" }
+  - { text: "Nada é permanente, exceto a mudança.", author: "Atribuída a Heráclito" }
+  - { text: "Não deixe para amanhã o que você pode fazer hoje.", author: "Benjamin Franklin" }
+  - { text: "A energia e a persistência conquistam todas as coisas.", author: "Benjamin Franklin" }
+  - { text: "A vitória pertence ao mais perseverante.", author: "Napoleão Bonaparte" }
+  - { text: "Atribuo meu sucesso a isto: nunca dei nem aceitei desculpas.", author: "Florence Nightingale" }
+  - { text: "A sorte favorece a mente preparada.", author: "Louis Pasteur" }
+  - { text: "A vida é como andar de bicicleta: para manter o equilíbrio, é preciso continuar em movimento.", author: "Albert Einstein" }
+  - { text: "O melhor momento para plantar uma árvore foi há vinte anos. O segundo melhor é agora.", author: "Provérbio chinês" }
+  - { text: "Caia sete vezes, levante-se oito.", author: "Provérbio japonês" }
+  - { text: "Se quer ir rápido, vá sozinho. Se quer ir longe, vá acompanhado.", author: "Provérbio africano" }
+  - { text: "Deus ajuda quem cedo madruga.", author: "Provérbio popular" }
+  - { text: "Querer é poder.", author: "Provérbio popular" }
+  - { text: "Antes tarde do que nunca.", author: "Provérbio popular" }
+  - { text: "Quem espera sempre alcança.", author: "Provérbio popular" }
+  - { text: "Cada dia é uma nova chance de fazer melhor.", author: "Dica do dia" }
+  - { text: "Comece pelo mais difícil enquanto a energia está alta.", author: "Dica do dia" }
+  - { text: "Celebre as pequenas vitórias do dia.", author: "Dica do dia" }
+  - { text: "Descanso também faz parte do trabalho bem-feito.", author: "Dica do dia" }
+  - { text: "Foque no que depende de você.", author: "Dica do dia" }
+  - { text: "Um dia ruim não define um mês bom.", author: "Dica do dia" }
+  - { text: "Termine o dia sabendo qual é a primeira tarefa de amanhã.", author: "Dica do dia" }
 negocios:
   - { text: "Tempo é dinheiro.", author: "Benjamin Franklin" }
   - { text: "Um centavo poupado é um centavo ganho.", author: "Benjamin Franklin" }
@@ -59,60 +105,175 @@ negocios:
   - { text: "Não encontre defeitos, encontre soluções.", author: "Henry Ford" }
   - { text: "A oportunidade é perdida pela maioria das pessoas porque vem vestida de macacão e parece trabalho.", author: "Thomas Edison" }
   - { text: "Há uma maneira de fazer melhor. Encontre-a.", author: "Thomas Edison" }
-  - { text: "O cliente satisfeito é a melhor estratégia de negócios.", author: "Provérbio popular" }
   - { text: "Quem não é visto não é lembrado.", author: "Provérbio popular" }
   - { text: "O olho do dono é que engorda o gado.", author: "Provérbio popular" }
   - { text: "Promessa é dívida.", author: "Provérbio popular" }
   - { text: "De grão em grão, a galinha enche o papo.", author: "Provérbio popular" }
   - { text: "Quem não arrisca não petisca.", author: "Provérbio popular" }
-  - { text: "O que não é medido não é gerenciado.", author: "Provérbio da administração" }
+  - { text: "O que não é medido não é gerenciado.", author: "Dica do dia" }
   - { text: "Não há vento favorável para quem não sabe aonde vai.", author: "Sêneca" }
   - { text: "Dê-me seis horas para cortar uma árvore e passarei as quatro primeiras afiando o machado.", author: "Atribuída a Abraham Lincoln" }
-  - { text: "A melhor maneira de prever o futuro é criá-lo.", author: "Provérbio da administração" }
+  - { text: "A melhor maneira de prever o futuro é criá-lo.", author: "Dica do dia" }
   - { text: "Faça cada coisa no seu tempo.", author: "Provérbio popular" }
-  - { text: "Lead que espera, esfria. Responda rápido.", author: "Elph" }
-  - { text: "Proposta parada é venda esquecida. Faça o follow-up hoje.", author: "Elph" }
-  - { text: "Venda não termina no pagamento: começa ali o próximo negócio.", author: "Elph" }
-  - { text: "Quem anota, lembra. Quem lembra, vende de novo.", author: "Elph" }
-  - { text: "Meta dividida por dia é meta que dá para bater.", author: "Elph" }
-  - { text: "Todo 'não' de hoje ensina o 'sim' de amanhã.", author: "Elph" }
-  - { text: "Cliente bem lembrado volta. Cliente esquecido vai para o concorrente.", author: "Elph" }
-  - { text: "Planejar o dia é ganhar o dia.", author: "Elph" }
-  - { text: "Prioridade é dizer não ao que não importa hoje.", author: "Elph" }
-  - { text: "Preço é o que você paga; valor é o que você leva.", author: "Provérbio popular" }
+  - { text: "Lead que espera, esfria. Responda rápido.", author: "Dica do dia" }
+  - { text: "Proposta parada é venda esquecida. Faça o follow-up hoje.", author: "Dica do dia" }
+  - { text: "Venda não termina no pagamento: começa ali o próximo negócio.", author: "Dica do dia" }
+  - { text: "Quem anota, lembra. Quem lembra, vende de novo.", author: "Dica do dia" }
+  - { text: "Meta dividida por dia é meta que dá para bater.", author: "Dica do dia" }
+  - { text: "Todo 'não' de hoje ensina o 'sim' de amanhã.", author: "Dica do dia" }
+  - { text: "Cliente bem lembrado volta. Cliente esquecido vai para o concorrente.", author: "Dica do dia" }
+  - { text: "Planejar o dia é ganhar o dia.", author: "Dica do dia" }
+  - { text: "Prioridade é dizer não ao que não importa hoje.", author: "Dica do dia" }
   - { text: "A simplicidade é o último grau de sofisticação.", author: "Atribuída a Leonardo da Vinci" }
-  - { text: "Trabalhe enquanto eles dormem, estude enquanto eles se divertem.", author: "Provérbio popular" }
   - { text: "Quem tem um porquê enfrenta qualquer como.", author: "Friedrich Nietzsche" }
   - { text: "A pressa é inimiga da perfeição.", author: "Provérbio popular" }
   - { text: "Mais vale um pássaro na mão do que dois voando.", author: "Provérbio popular" }
+  - { text: "Quem compra o supérfluo logo venderá o necessário.", author: "Benjamin Franklin" }
+  - { text: "A diligência é a mãe da boa sorte.", author: "Benjamin Franklin" }
+  - { text: "Tempo perdido nunca mais é encontrado.", author: "Benjamin Franklin" }
+  - { text: "Um negócio que só dá dinheiro é um negócio pobre.", author: "Henry Ford" }
+  - { text: "Pensar é o trabalho mais difícil que existe; talvez por isso tão poucos se dediquem a ele.", author: "Henry Ford" }
+  - { text: "Não é o patrão quem paga os salários; é o cliente.", author: "Atribuída a Henry Ford" }
+  - { text: "Coloque todos os ovos numa cesta só, e vigie a cesta.", author: "Andrew Carnegie" }
+  - { text: "Metade do dinheiro que gasto em propaganda é desperdiçada; o problema é que não sei qual metade.", author: "Atribuída a John Wanamaker" }
+  - { text: "Não há substituto para o trabalho duro.", author: "Thomas Edison" }
+  - { text: "O valor de uma ideia está em colocá-la em prática.", author: "Thomas Edison" }
+  - { text: "Sem propaganda, acontece algo terrível: nada.", author: "Atribuída a P. T. Barnum" }
+  - { text: "Não é da bondade do padeiro que esperamos nosso pão, mas do cuidado dele com o próprio interesse.", author: "Adam Smith" }
+  - { text: "Conheça o adversário e conheça a si mesmo, e não temerá o resultado de cem batalhas.", author: "Sun Tzu" }
+  - { text: "Em meio ao caos, também há oportunidade.", author: "Atribuída a Sun Tzu" }
+  - { text: "Se quer prever o futuro, estude o passado.", author: "Atribuída a Confúcio" }
+  - { text: "Lembre-se: sua decisão de vencer é mais importante do que qualquer outra coisa.", author: "Abraham Lincoln" }
+  - { text: "Ninguém se importa com o quanto você sabe até saber o quanto você se importa.", author: "Atribuída a Theodore Roosevelt" }
+  - { text: "Nada neste mundo vale a pena ter ou fazer se não exigir esforço.", author: "Theodore Roosevelt" }
+  - { text: "Dê ao cliente o que ele quer.", author: "Atribuída a Marshall Field" }
+  - { text: "O cliente tem sempre razão.", author: "Atribuída a Harry Gordon Selfridge" }
+  - { text: "O barato sai caro.", author: "Provérbio popular" }
+  - { text: "Quem guarda tem.", author: "Provérbio popular" }
+  - { text: "Uma andorinha só não faz verão.", author: "Provérbio popular" }
+  - { text: "A primeira impressão é a que fica.", author: "Provérbio popular" }
+  - { text: "Quem procura acha.", author: "Provérbio popular" }
+  - { text: "Responda o cliente hoje; amanhã ele pode já ter comprado de outro.", author: "Dica do dia" }
+  - { text: "Anote cada venda: o que não é registrado se perde.", author: "Dica do dia" }
+  - { text: "Pergunte a cada cliente como ele conheceu você.", author: "Dica do dia" }
+  - { text: "Um cliente fiel vale mais que dez anúncios.", author: "Dica do dia" }
+  - { text: "Revise a meta no meio do mês, não no último dia.", author: "Dica do dia" }
+  - { text: "Fale com quem comprou há 30 dias: pode ser a próxima venda.", author: "Dica do dia" }
+  - { text: "Peça uma indicação logo depois de um bom atendimento.", author: "Dica do dia" }
+  - { text: "Margem importa mais que faturamento.", author: "Dica do dia" }
+  - { text: "Separe o dinheiro da empresa do dinheiro de casa.", author: "Dica do dia" }
+  - { text: "Saiba quais são os três produtos que mais vendem.", author: "Dica do dia" }
+  - { text: "Preço justo é o que paga as contas e ainda deixa lucro.", author: "Dica do dia" }
+  - { text: "Todo cliente perdido tem um motivo: descubra qual.", author: "Dica do dia" }
+  - { text: "Agradeça cada compra: é o primeiro passo da próxima.", author: "Dica do dia" }
+  - { text: "Organização hoje é tempo livre amanhã.", author: "Dica do dia" }
+  - { text: "Um follow-up educado não incomoda; o esquecimento, sim.", author: "Dica do dia" }
 biblia:
-  - { text: "Tudo posso naquele que me fortalece.", ref: "Filipenses 4:13" }
-  - { text: "Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref: "Salmos 37:5" }
-  - { text: "Confia ao Senhor as tuas obras, e teus pensamentos serão estabelecidos.", ref: "Provérbios 16:3" }
-  - { text: "O Senhor é o meu pastor; nada me faltará.", ref: "Salmos 23:1" }
-  - { text: "Tudo tem o seu tempo determinado, e há tempo para todo propósito debaixo do céu.", ref: "Eclesiastes 3:1" }
-  - { text: "Esforça-te e tem bom ânimo; não temas, nem te espantes.", ref: "Josué 1:9" }
-  - { text: "Tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor.", ref: "Colossenses 3:23" }
-  - { text: "Não te deixes vencer do mal, mas vence o mal com o bem.", ref: "Romanos 12:21" }
-  - { text: "Pedi, e dar-se-vos-á; buscai, e achareis; batei, e abrir-se-vos-á.", ref: "Mateus 7:7" }
-  - { text: "A resposta branda desvia o furor.", ref: "Provérbios 15:1" }
-  - { text: "Os planos do diligente tendem à abundância.", ref: "Provérbios 21:5" }
-  - { text: "Viste um homem diligente na sua obra? Perante reis será posto.", ref: "Provérbios 22:29" }
-  - { text: "O que lavra a sua terra se fartará de pão.", ref: "Provérbios 12:11" }
-  - { text: "Melhor é o fim das coisas do que o princípio delas.", ref: "Eclesiastes 7:8" }
-  - { text: "Não andeis ansiosos de coisa alguma.", ref: "Filipenses 4:6" }
-  - { text: "Buscai primeiro o Reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref: "Mateus 6:33" }
-  - { text: "Não vos canseis de fazer o bem.", ref: "2 Tessalonicenses 3:13" }
-  - { text: "Os que esperam no Senhor renovarão as suas forças.", ref: "Isaías 40:31" }
-  - { text: "Alegrai-vos na esperança, sede pacientes na tribulação, perseverai na oração.", ref: "Romanos 12:12" }
-  - { text: "Onde não há conselho, os projetos falham, mas com muitos conselheiros se estabelecem.", ref: "Provérbios 15:22" }
-  - { text: "O coração do homem planeja o seu caminho, mas o Senhor lhe dirige os passos.", ref: "Provérbios 16:9" }
-  - { text: "Mais vale o bom nome do que as muitas riquezas.", ref: "Provérbios 22:1" }
-  - { text: "Instruí o menino no caminho em que deve andar.", ref: "Provérbios 22:6" }
-  - { text: "O ferro com o ferro se afia, e o homem afia o rosto do seu amigo.", ref: "Provérbios 27:17" }
-  - { text: "Mais bem-aventurada coisa é dar do que receber.", ref: "Atos 20:35" }
-  - { text: "Tudo o que vós quereis que os homens vos façam, fazei-o também vós a eles.", ref: "Mateus 7:12" }
-  - { text: "Quem é fiel no pouco também é fiel no muito.", ref: "Lucas 16:10" }
-  - { text: "Melhor é serem dois do que um.", ref: "Eclesiastes 4:9" }
-  - { text: "Este é o dia que o Senhor fez; regozijemo-nos e alegremo-nos nele.", ref: "Salmos 118:24" }
-  - { text: "Lança o teu pão sobre as águas, porque depois de muitos dias o acharás.", ref: "Eclesiastes 11:1" }
+  - { text: "Olha que te mando que te esforces e sejas valente: não temas nem desmaies, porque o SENHOR teu Deus será contigo onde quer que fores.", ref: "Josué 1:9 (BLIVRE)" }
+  - { text: "E agrada-te no SENHOR; e ele te dará os pedidos de teu coração.", ref: "Salmos 37:4 (BLIVRE)" }
+  - { text: "E que o agrado do SENHOR nosso Deus seja sobre nós; e confirma as obras de nossas mãos sobre nós; sim, a obra de nossas mãos, confirma!", ref: "Salmos 90:17 (BLIVRE)" }
+  - { text: "Este é o dia em que o SENHOR agiu; alegremos e enchamos de alegria nele.", ref: "Salmos 118:24 (BLIVRE)" }
+  - { text: "Meu socorro vem do SENHOR, que fez os céus e a terra.", ref: "Salmos 121:2 (BLIVRE)" }
+  - { text: "O SENHOR é meu pastor, nada me faltará.", ref: "Salmos 23:1 (BLIVRE)" }
+  - { text: "O SENHOR é minha luz e minha salvação; a quem temerei? O SENHOR é a força da minha vida; de quem terei medo?", ref: "Salmos 27:1 (BLIVRE)" }
+  - { text: "Deus é nosso refúgio e força; socorro oportuno nas angústias.", ref: "Salmos 46:1 (BLIVRE)" }
+  - { text: "Entrega tuas preocupações ao SENHOR, e ele te sustentará; ele não permitirá que o justo fique caído para sempre.", ref: "Salmos 55:22 (BLIVRE)" }
+  - { text: "Os que semeiam em lágrimas colherão com alegria.", ref: "Salmos 126:5 (BLIVRE)" }
+  - { text: "Experimentai, e vede que o SENHOR é bom; bem-aventurado é o homem que confia nele.", ref: "Salmos 34:8 (BLIVRE)" }
+  - { text: "Ponho ao SENHOR continuamente diante de mim; porque ele está à minha direita; nunca serei abalado.", ref: "Salmos 16:8 (BLIVRE)" }
+  - { text: "Sede fortes, e ele fortalecerá vosso coração, todos vós que esperais no SENHOR.", ref: "Salmos 31:24 (BLIVRE)" }
+  - { text: "Descansa no SENHOR, e espera nele; não te irrites contra aquele cujo caminho prospera, nem com o homem que planeja maldades.", ref: "Salmos 37:7 (BLIVRE)" }
+  - { text: "Esperei com esperança no SENHOR, e ele se inclinou a mim, e ouviu o meu clamor.", ref: "Salmos 40:1 (BLIVRE)" }
+  - { text: "Certamente minha alma se aquieta por causa de Deus; dele vem minha salvação.", ref: "Salmos 62:1 (BLIVRE)" }
+  - { text: "Agradecei ao SENHOR, porque ele é bom; porque sua bondade dura para sempre.", ref: "Salmos 107:1 (BLIVRE)" }
+  - { text: "Porque comerás do trabalho de tuas mãos; tu serás bem-aventurado, e bem lhe sucederá.", ref: "Salmos 128:2 (BLIVRE)" }
+  - { text: "O SENHOR está perto de todos os que o chamam; de todos os que clamam a ele sinceramente.", ref: "Salmos 145:18 (BLIVRE)" }
+  - { text: "Eu deitarei, e dormirei em paz; porque só tu, SENHOR, me fazes descansar seguro.", ref: "Salmos 4:8 (BLIVRE)" }
+  - { text: "O SENHOR é minha rocha, e minha fortaleza, e meu libertador, meu Deus, meu rochedo, em quem confio; é meu escudo, e a força da minha salvação, meu alto refúgio.", ref: "Salmos 18:2 (BLIVRE)" }
+  - { text: "Porque o SENHOR Deus é sol e escudo; o SENHOR concederá graça e honra; ele não negará o bem aos que andam em integridade.", ref: "Salmos 84:11 (BLIVRE)" }
+  - { text: "Aquele que mora no esconderijo do Altíssimo, à sombra do Todo-Poderoso habitará.", ref: "Salmos 91:1 (BLIVRE)" }
+  - { text: "Confia no SENHOR com todo o teu coração; e não te apoies em teu próprio entendimento.", ref: "Provérbios 3:5 (BLIVRE)" }
+  - { text: "Confia tuas obras ao SENHOR, e teus pensamentos serão firmados.", ref: "Provérbios 16:3 (BLIVRE)" }
+  - { text: "O coração do homem planeja seu caminho, mas é o SENHOR que dirige seus passos.", ref: "Provérbios 16:9 (BLIVRE)" }
+  - { text: "Aquele que trabalha com mão preguiçosa empobrece; mas a mão de quem trabalha com empenho enriquece.", ref: "Provérbios 10:4 (BLIVRE)" }
+  - { text: "A mão dos que trabalham com empenho dominará, e os preguiçosos se tornarão escravos.", ref: "Provérbios 12:24 (BLIVRE)" }
+  - { text: "Em todo trabalho cansativo há proveito, mas o falar dos lábios só leva à pobreza.", ref: "Provérbios 14:23 (BLIVRE)" }
+  - { text: "Os planos de quem trabalha com empenho somente levam à abundância; mas os de todo apressado somente à pobreza.", ref: "Provérbios 21:5 (BLIVRE)" }
+  - { text: "Viste um homem habilidoso em sua obra? Perante a face dos reis ele será posto; ele não será posto diante de pessoas sem honra.", ref: "Provérbios 22:29 (BLIVRE)" }
+  - { text: "A alma generosa prosperará, e aquele que saciar também será saciado.", ref: "Provérbios 11:25 (BLIVRE)" }
+  - { text: "Os planos fracassam quando não há bom conselho; mas com abundância de conselheiros eles se confirmam.", ref: "Provérbios 15:22 (BLIVRE)" }
+  - { text: "Vai até a formiga, preguiçoso; olha para os caminhos dela, e sê sábio.", ref: "Provérbios 6:6 (BLIVRE)" }
+  - { text: "Aquele que lavra sua terra se saciará de pão; mas o que segue coisas inúteis tem falta de juízo.", ref: "Provérbios 12:11 (BLIVRE)" }
+  - { text: "A riqueza ganha sem esforço será perdida; mas aquele que a obtém pelas próprias mãos terá cada vez mais.", ref: "Provérbios 13:11 (BLIVRE)" }
+  - { text: "Melhor é o pouco com justiça, do que a abundância de rendas com injustiça.", ref: "Provérbios 16:8 (BLIVRE)" }
+  - { text: "Há muitos pensamentos no coração do homem; porém o conselho do SENHOR prevalecerá.", ref: "Provérbios 19:21 (BLIVRE)" }
+  - { text: "Prepara o teu trabalho de fora, e deixa pronto o teu campo; então depois, edifica a tua casa.", ref: "Provérbios 24:27 (BLIVRE)" }
+  - { text: "Acima de tudo o que se deve guardar, guarda o teu coração; porque dele procedem as saídas da vida.", ref: "Provérbios 4:23 (BLIVRE)" }
+  - { text: "A resposta suave desvia o furor, mas a palavra pesada faz a ira aumentar.", ref: "Provérbios 15:1 (BLIVRE)" }
+  - { text: "O coração alegre é um bom remédio, mas o espírito abatido faz os ossos se secarem.", ref: "Provérbios 17:22 (BLIVRE)" }
+  - { text: "O coração do prudente adquire conhecimento; e o ouvido dos sábios busca conhecimento.", ref: "Provérbios 18:15 (BLIVRE)" }
+  - { text: "Não ames ao sono, para que não empobreças; abre teus olhos, e te fartarás de pão.", ref: "Provérbios 20:13 (BLIVRE)" }
+  - { text: "Aquele que lavrar sua terra terá fartura de pão; mas o que segue coisas inúteis terá fartura de pobreza.", ref: "Provérbios 28:19 (BLIVRE)" }
+  - { text: "É a bênção do SENHOR que enriquece; e ele não lhe acrescenta dores.", ref: "Provérbios 10:22 (BLIVRE)" }
+  - { text: "Há quem dá generosamente e tem cada vez mais; e há quem retém mais do que é justo e empobrece.", ref: "Provérbios 11:24 (BLIVRE)" }
+  - { text: "Não detenhas o bem daqueles que possuem o direito, se tiveres em tuas mãos poder para o fazeres.", ref: "Provérbios 3:27 (BLIVRE)" }
+  - { text: "O ferro é afiado com ferro; assim também o homem afia o rosto de seu amigo.", ref: "Provérbios 27:17 (BLIVRE)" }
+  - { text: "A ansiedade no coração do homem o abate; mas uma boa palavra o alegra.", ref: "Provérbios 12:25 (BLIVRE)" }
+  - { text: "O principal é a sabedoria; adquire sabedoria, e acima de tudo o que adquirires, adquire entendimento.", ref: "Provérbios 4:7 (BLIVRE)" }
+  - { text: "Pela manhã semeia tua semente, e à tarde não retires tua mão; pois tu não sabes qual tentativa dará certo, se uma, se outra, ou se ambas as tentativas serão boas.", ref: "Eclesiastes 11:6 (BLIVRE)" }
+  - { text: "Para todas as coisas há um tempo determinado, e todo propósito abaixo do céu tem seu tempo.", ref: "Eclesiastes 3:1 (BLIVRE)" }
+  - { text: "Dois são melhores do que um, porque eles têm melhor recompensa por seu trabalho.", ref: "Eclesiastes 4:9 (BLIVRE)" }
+  - { text: "Melhor é o fim das coisas do que o princípio delas; melhor é o paciente de espírito do que o arrogante de espírito.", ref: "Eclesiastes 7:8 (BLIVRE)" }
+  - { text: "Quem ficar dando atenção ao vento, nunca semeará; e o que olhar para as nuvens nunca ceifará.", ref: "Eclesiastes 11:4 (BLIVRE)" }
+  - { text: "Mas os que confiam no SENHOR renovarão as forças, subirão com asas como águias; correrão, e não se cansarão; caminharão, e não se fatigarão.", ref: "Isaías 40:31 (BLIVRE)" }
+  - { text: "Não temas, porque eu estou contigo; não te assombres, porque eu sou teu Deus. Eu te fortaleço, te ajudo, e te sustento com a minha mão direita de justiça.", ref: "Isaías 41:10 (BLIVRE)" }
+  - { text: "Ele dá força ao cansado, e multiplica as forças daquele que não tem vigor.", ref: "Isaías 40:29 (BLIVRE)" }
+  - { text: "Eis que farei uma coisa nova, agora surgirá; por acaso não a reconhecereis? Pois porei um caminho no deserto, e rios na terra vazia.", ref: "Isaías 43:19 (BLIVRE)" }
+  - { text: "Tu guardarás em completa paz aquele que tem firme entendimento, pois ele confia em ti.", ref: "Isaías 26:3 (BLIVRE)" }
+  - { text: "Porque eu sei os pensamentos que penso quanto a vós, diz o SENHOR, pensamentos de paz, e não de mal, para vos dar um futuro com esperança.", ref: "Jeremias 29:11 (BLIVRE)" }
+  - { text: "É pelas bondades do SENHOR que não somos consumidos, porque suas misericórdias não têm fim.", ref: "Lamentações 3:22 (BLIVRE)" }
+  - { text: "Elas são novas a cada manhã; grande é a tua fidelidade.", ref: "Lamentações 3:23 (BLIVRE)" }
+  - { text: "Ele já declarou a ti, ó ser humano, o que é bom; e que mais o SENHOR pede de ti, a não ser fazer o que é justo, amar a bondade, e andar humildemente com teu Deus?", ref: "Miqueias 6:8 (BLIVRE)" }
+  - { text: "DEUS, o Senhor, é minha fortaleza; ele fará meus pés como os das corças, e me fará andar sobre meus lugares altos.", ref: "Habacuque 3:19 (BLIVRE)" }
+  - { text: "Esforçai-vos e tende ânimo; não temais, nem tenhais medo deles: que o SENHOR teu Deus é o que vai contigo: não te deixará nem te desamparará.", ref: "Deuteronômio 31:6 (BLIVRE)" }
+  - { text: "Esforçai-vos, porém, vós, e não desfaleçam vossas mãos; que recompensa há para vossa obra.", ref: "2 Crônicas 15:7 (BLIVRE)" }
+  - { text: "Mas buscai primeiramente o Reino de Deus e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref: "Mateus 6:33 (BLIVRE)" }
+  - { text: "Não andeis, pois, ansiosos pelo dia de amanhã, porque o amanhã cuidará de si mesmo. Basta a cada dia o seu mal.", ref: "Mateus 6:34 (BLIVRE)" }
+  - { text: "Vinde a mim todos vós que estais cansados e sobrecarregados, e eu vos farei descansar.", ref: "Mateus 11:28 (BLIVRE)" }
+  - { text: "Assim brilhe vossa luz diante das pessoas, para que vejam vossas boas obras, e glorifiquem ao vosso Pai, que está nos céus.", ref: "Mateus 5:16 (BLIVRE)" }
+  - { text: "Portanto tudo o que quiserdes que os outros vos façam, fazei-lhes vós também assim; porque esta é a Lei e os Profetas.", ref: "Mateus 7:12 (BLIVRE)" }
+  - { text: "E Jesus lhe disse: Se podes crer, tudo é possível ao que crê.", ref: "Marcos 9:23 (BLIVRE)" }
+  - { text: "Portanto eu vos digo que tudo o que pedirdes orando, crede que recebereis, e vós o tereis.", ref: "Marcos 11:24 (BLIVRE)" }
+  - { text: "Quem é fiel no mínimo, também é fiel no muito; e quem é injusto no mínimo, também é injusto no muito.", ref: "Lucas 16:10 (BLIVRE)" }
+  - { text: "Dai, e será vos dado; medida boa, comprimida, sacudida e transbordante vos darão no vosso colo; pois com a mesma medida que medirdes vos medirão de volta.", ref: "Lucas 6:38 (BLIVRE)" }
+  - { text: "Pois para Deus nada será impossível.", ref: "Lucas 1:37 (BLIVRE)" }
+  - { text: "A paz vos deixo, minha paz vos dou; vou dá-la a vós, não como o mundo a dá. Não se perturbe vosso coração, nem se atemorize.", ref: "João 14:27 (BLIVRE)" }
+  - { text: "Estas coisas tenho vos dito para que tenhais paz em mim; no mundo tereis aflição; mas tende bom ânimo; eu venci o mundo.", ref: "João 16:33 (BLIVRE)" }
+  - { text: "E sabemos que todas as coisas juntamente contribuem para o bem daqueles que amam a Deus, dos que são chamados segundo o seu propósito.", ref: "Romanos 8:28 (BLIVRE)" }
+  - { text: "Não sejais vagarosos em mostrardes empenho. Sede fervorosos de espírito. Servi ao Senhor.", ref: "Romanos 12:11 (BLIVRE)" }
+  - { text: "Alegrai-vos na esperança. Sede pacientes na aflição. Perseverai na oração.", ref: "Romanos 12:12 (BLIVRE)" }
+  - { text: "O Deus da esperança vos encha de toda alegria e paz na fé, para que abundeis em esperança no poder do Espírito Santo.", ref: "Romanos 15:13 (BLIVRE)" }
+  - { text: "Então, que diremos acerca dessas coisas? Se Deus é por nós, quem será contra nós?", ref: "Romanos 8:31 (BLIVRE)" }
+  - { text: "Portanto, meus amados irmãos, sede firmes, imóveis e sempre abundantes na obra do Senhor, sabendo que o vosso trabalho não é vão no Senhor.", ref: "1 Coríntios 15:58 (BLIVRE)" }
+  - { text: "Todas as vossas coisas sejam feitas em amor.", ref: "1 Coríntios 16:14 (BLIVRE)" }
+  - { text: "Portanto, ao comer, ou ao beber, ou ao fazer qualquer coisa, fazei tudo para a glória de Deus.", ref: "1 Coríntios 10:31 (BLIVRE)" }
+  - { text: "Cada qual faça como propõe em seu coração, não com tristeza, ou por obrigação; porque Deus ama ao que dá com alegria.", ref: "2 Coríntios 9:7 (BLIVRE)" }
+  - { text: "Por isso não desfalecemos; mas ainda que nosso ser exterior se destrua, todavia o interior se renova a cada dia.", ref: "2 Coríntios 4:16 (BLIVRE)" }
+  - { text: "Porém não cansemos de fazer o bem, pois no tempo devido colheremos, se não desistirmos.", ref: "Gálatas 6:9 (BLIVRE)" }
+  - { text: "Não vos enganeis: Deus não se deixa escarnecer; pois, o que o ser humano semear, isso também colherá.", ref: "Gálatas 6:7 (BLIVRE)" }
+  - { text: "Em vez disso, sede benignos uns com os outros, misericordiosos, perdoando-vos uns aos outros, como também Deus vos perdoou em Cristo.", ref: "Efésios 4:32 (BLIVRE)" }
+  - { text: "Posso todas as coisas em Cristo que me fortalece.", ref: "Filipenses 4:13 (BLIVRE)" }
+  - { text: "E disto tenho certeza: aquele que começou a boa obra em vós irá completá-la até o dia de Jesus Cristo.", ref: "Filipenses 1:6 (BLIVRE)" }
+  - { text: "E tudo quanto fizerdes, fazei de coração, como para o Senhor, e não para as pessoas.", ref: "Colossenses 3:23 (BLIVRE)" }
+  - { text: "E tudo quanto fizerdes, por palavras ou por obras, fazei tudo no nome do Senhor Jesus, dando por meio dele graças ao Deus e Pai.", ref: "Colossenses 3:17 (BLIVRE)" }
+  - { text: "Agradecei em tudo, pois essa é a vontade de Deus em Cristo Jesus para vós mesmos.", ref: "1 Tessalonicenses 5:18 (BLIVRE)" }
+  - { text: "Alegrai-vos sempre.", ref: "1 Tessalonicenses 5:16 (BLIVRE)" }
+  - { text: "E vós, irmãos, não vos canseis de fazer o bem.", ref: "2 Tessalonicenses 3:13 (BLIVRE)" }
+  - { text: "Pois Deus não nos deu espírito de medo; mas sim de força, de amor, e de moderação.", ref: "2 Timóteo 1:7 (BLIVRE)" }
+  - { text: "A vossa maneira de viver seja sem ganância, contentando-vos com as coisas que tendes. Pois ele disse: Não te deixarei, nem te desampararei.", ref: "Hebreus 13:5 (BLIVRE)" }
+  - { text: "Ora, a fé é a certeza das coisas que se esperam, e a prova das coisas que não se veem.", ref: "Hebreus 11:1 (BLIVRE)" }
+  - { text: "Pois Deus não é injusto para se esquecer da vossa obra, e do trabalho do amor que mostrastes para com o nome dele, quando servistes aos santos, e continuais a servir.", ref: "Hebreus 6:10 (BLIVRE)" }
+  - { text: "Se algum de vós tem falta de sabedoria, peça a Deus, que concede generosamente a todos sem repreender, e lhe será dada.", ref: "Tiago 1:5 (BLIVRE)" }
+  - { text: "Bendito é o homem que suporta a provação; pois, quando for aprovado, receberá a coroa da vida, que o Senhor prometeu aos que o amam.", ref: "Tiago 1:12 (BLIVRE)" }
+  - { text: "Cada um sirva aos outros segundo o dom que recebeu, como bons administradores da variada graça de Deus.", ref: "1 Pedro 4:10 (BLIVRE)" }
+  - { text: "Meus filhinhos, amemos não de palavra, nem de língua, mas sim com ação e verdade.", ref: "1 João 3:18 (BLIVRE)" }
