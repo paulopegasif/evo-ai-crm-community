@@ -60,6 +60,9 @@ RSpec.describe 'API v1 mutating actions permission guard' do
     # Admin-only (require_admin! → 403 for non-admins).
     'api/v1/sales_goals' => %w[upsert destroy],
     'api/v1/daily_summary_settings' => %w[update test],
+    # Assistente no WhatsApp: super_admin only (require_super_admin! → 403 for
+    # everyone else, including account owners and administrators).
+    'api/v1/business_assistant_settings' => %w[update test],
     # update_preferences is self-service (caller's own ui_settings);
     # update_settings is admin-only (require_admin!).
     'api/v1/daily_panel' => %w[update_preferences update_settings]

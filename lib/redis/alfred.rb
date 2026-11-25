@@ -31,6 +31,10 @@ module Redis::Alfred
       $alfred.with { |conn| conn.incr(key) }
     end
 
+    def expire(key, seconds)
+      $alfred.with { |conn| conn.expire(key, seconds) }
+    end
+
     def exists?(key)
       $alfred.with { |conn| conn.exists?(key) }
     end

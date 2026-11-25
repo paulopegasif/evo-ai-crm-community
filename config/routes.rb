@@ -279,6 +279,9 @@ Rails.application.routes.draw do
       get 'daily_summary_settings', to: 'daily_summary_settings#show'
       put 'daily_summary_settings', to: 'daily_summary_settings#update'
       post 'daily_summary_settings/test', to: 'daily_summary_settings#test'
+      get 'business_assistant_settings', to: 'business_assistant_settings#show'
+      put 'business_assistant_settings', to: 'business_assistant_settings#update'
+      post 'business_assistant_settings/test', to: 'business_assistant_settings#test'
 
       # Product Catalog (EVO-1109)
       resources :products, only: [:index, :create, :show, :update, :destroy], controller: 'products' do
@@ -691,6 +694,23 @@ Rails.application.routes.draw do
             end
           end
         end
+      end
+    end
+  end
+
+  # API do assistente de negócio (agente no n8n), autenticada por token temporário.
+  namespace :assistant, defaults: { format: 'json' } do
+    namespace :v1 do
+      post 'replies', to: 'replies#create'
+      get 'sales/summary', to: 'sales#summary'
+      get 'leads/funnel', to: 'leads#funnel'
+      get 'pending', to: 'pending#show'
+      get 'ads/spend', to: 'ads#spend'
+      get 'customers/search', to: 'customers#search'
+      get 'customers/ranking', to: 'customers#ranking'
+      get 'customers/:id/history', to: 'customers#history'
+      %w[month_projection compare campaigns budget_simulation funnel seasonality customer_health].each do |analysis|
+        get "analytics/#{analysis}", to: "analytics##{analysis}"
       end
     end
   end

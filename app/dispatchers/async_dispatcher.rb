@@ -22,6 +22,7 @@ class AsyncDispatcher < BaseDispatcher
       ReportingEventListener.instance,
       WebhookListener.instance,
       ChannelListener.instance,
+      BusinessAssistantListener.instance,
       WhatsappSyncListener.instance,
       ZapiSyncListener.instance
     ]
