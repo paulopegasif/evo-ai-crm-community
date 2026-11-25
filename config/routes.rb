@@ -268,6 +268,7 @@ Rails.application.routes.draw do
       # Painel do Dia (pequenos negócios): vendas, metas, painel e resumo diário
       resources :sales, only: [:index, :create, :update], controller: 'sales' do
         post :cancel, on: :member
+        get :sellers, on: :collection
       end
       resources :sales_goals, only: [:index, :destroy], controller: 'sales_goals'
       put 'sales_goals', to: 'sales_goals#upsert'

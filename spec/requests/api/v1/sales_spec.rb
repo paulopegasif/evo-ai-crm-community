@@ -44,6 +44,22 @@ RSpec.describe 'Api::V1::Sales', type: :request do
     end
   end
 
+  describe 'GET /api/v1/sales/sellers' do
+    it 'lista usuários do CRM para admin e recusa agente' do
+      get '/api/v1/sales/sellers', headers: auth_headers_for(admin, role: 'administrator')
+      expect(json_data.map { |u| u['id'] }).to include(ana.id, bia.id)
+
+      get '/api/v1/sales/sellers', headers: auth_headers_for(ana)
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'recusa seller_id que não é usuário do CRM' do
+      post '/api/v1/sales', params: { sale: { amount: 10, seller_id: SecureRandom.uuid } },
+                            headers: auth_headers_for(admin, role: 'administrator'), as: :json
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+  end
+
   describe 'GET /api/v1/sales' do
     before do
       create_sale(amount: 10, seller: ana, created_by: ana)

@@ -18,6 +18,7 @@ class Sale < ApplicationRecord
   validates :sold_at, presence: true
   validates :amount, numericality: { greater_than_or_equal_to: 0 }
   validates :amount, numericality: { greater_than: 0, message: :must_be_positive }, if: :manual?
+  validate :seller_exists, if: -> { seller_id.present? && will_save_change_to_seller_id? }
 
   before_validation :default_sold_at
   before_save :sync_missing_amount
@@ -48,6 +49,10 @@ class Sale < ApplicationRecord
 
   def default_sold_at
     self.sold_at ||= Time.current
+  end
+
+  def seller_exists
+    errors.add(:seller_id, :invalid) unless User.exists?(id: seller_id)
   end
 
   def sync_missing_amount

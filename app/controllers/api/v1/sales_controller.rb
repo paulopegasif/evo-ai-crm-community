@@ -3,6 +3,7 @@
 class Api::V1::SalesController < Api::V1::BaseController
   include PainelDoDiaAccess
 
+  before_action :require_admin!, only: :sellers
   before_action :fetch_sale, only: %i[update cancel]
   before_action :authorize_change!, only: %i[update cancel]
 
@@ -34,6 +35,11 @@ class Api::V1::SalesController < Api::V1::BaseController
     else
       record_validation_error(@sale)
     end
+  end
+
+  # Usuários do CRM (ids locais) para o seletor de vendedor — só administradores escolhem vendedor.
+  def sellers
+    success_response(data: User.order(:name).map { |u| { id: u.id, name: u.name } })
   end
 
   def cancel
